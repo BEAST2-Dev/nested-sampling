@@ -242,16 +242,7 @@ public class NS extends MCMC {
 		double delta = Double.POSITIVE_INFINITY; 
 	
 		double N = particleCount;
-		// RRB the above definition results in zero contribution very early on
-		// rescale so that last step contributes wth weight = C
-		// solve Xi_1 - Xi = C
-		// exp((chainLength - 1)/N) - exp(chainLength/N) = C
-		// exp(chainLength - 1) - exp(chainLength) = C * exp(N)	
-		// N = log(exp(chainLength - 1) - exp(chainLength)) - log(C)
-		// N = log(exp((chainLength - 1)/chainLength) - 1) * chainLength - log(C)
-		//double C = 1e-6; 
-		//N = Math.log(Math.exp((chainLength - 1.0) / chainLength) - 1.0) * chainLength - Math.log(C);
-
+ 
 		
 		
 		oldLogPrior = 0;
