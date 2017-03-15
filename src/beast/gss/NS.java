@@ -241,9 +241,8 @@ public class NS extends MCMC {
 		double Z = -Double.MAX_VALUE;
 		double delta = Double.POSITIVE_INFINITY; 
 	
-		double N = particleCount;
- 
-		
+		double N = particleCount;	
+		double lw;
 		
 		oldLogPrior = 0;
 		for (Distribution d : samplingDistribution) {
@@ -257,7 +256,7 @@ public class NS extends MCMC {
 			Log.warning.println("Please wait while BEAST takes " + burnIn + " pre-burnin samples");
 		}
 		
-		double logW = Math.log(1 - Math.exp(-1.0/N));
+		double logW = Math.log(1.0 - Math.exp(-1.0/N));
 		for (int sampleNr = -burnIn; sampleNr <= chainLength; sampleNr++) {
 
 			// find particle with minimum likelihood
@@ -294,9 +293,9 @@ public class NS extends MCMC {
 				//delta = Li * wi; 
 				//Z  += delta;
 
-				logW = logW - (sampleNr - 1.0) / N;
+				lw = logW - (sampleNr - 1.0) / N;
 				double Li = minLikelihood;
-				double L = logW  + Li;
+				double L = lw  + Li;
 				Z = logPlus(Z, L);
 				Log.err.print(" " + Z);
 			}
