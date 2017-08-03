@@ -36,16 +36,17 @@ name="alignment">
 <map name="OneOnX" >beast.math.distributions.OneOnX</map>
 
 
-<!--
-<run id="mcmc" spec="beast.gss.NS" chainLength="1000" particleCount="20" preBurnin="500">
-<run id="mcmc" spec="MCMC" chainLength="10000000">
-<run id="mcmc" spec="MCMC" chainLength="10000000">
--->
 <!-- stepping stone 
-16 steps: marginal L estimate = -5247.000654095922 
-32 steps: marginal L estimate = -5258.4387823596535
+32 step PS: marginal L estimate = -5238.877286728123
+32 step PS: marginal L estimate = -5238.652875997425
+10 particle NS: Marginal likelihood: -5241.03054126827 
+50 particle NS: Marginal likelihood: -5238.518454088148
+
 -->
-<run id="mcmc" spec="beast.gss.NS" chainLength="2000" particleCount="10">
+<!--
+<run id="mcmc" spec="MCMC" chainLength="1200">
+-->
+<run id="mcmc" spec="beast.gss.NS" chainLength="2500" preBurnin="56" particleCount="28">
     <state id="state" storeEvery="5000">
         <tree id="Tree.t:dna" name="stateNode">
             <taxonset id="TaxonSet.dna" spec="TaxonSet">
@@ -65,7 +66,7 @@ name="alignment">
         <distribution id="prior" spec="util.CompoundDistribution">
             <distribution id="YuleModel.t:dna" spec="beast.evolution.speciation.YuleModel" birthDiffRate="@birthRate.t:dna" tree="@Tree.t:dna"/>
             <prior id="YuleBirthRatePrior.t:dna" name="distribution" x="@birthRate.t:dna">
-                <Uniform id="Uniform.1" name="distr" upper="Infinity"/>
+                <Uniform id="Uniform.1" name="distr" upper="10"/>
             </prior>
         </distribution>
         <distribution id="likelihood" spec="util.CompoundDistribution" useThreads="true">
@@ -83,15 +84,15 @@ name="alignment">
         </distribution>
     </distribution>
 
-    <operator id="YuleBirthRateScaler.t:dna" spec="ScaleOperator" parameter="@birthRate.t:dna" scaleFactor="0.75" weight="3.0"/>
+    <operator id="YuleBirthRateScaler.t:dna" spec="ScaleOperator" parameter="@birthRate.t:dna" scaleFactor="0.5" weight="3.0" optimise="false"/>
 
-    <operator id="YuleModelTreeScaler.t:dna" spec="ScaleOperator" scaleFactor="0.5" tree="@Tree.t:dna" weight="3.0"/>
+    <operator id="YuleModelTreeScaler.t:dna" spec="ScaleOperator" scaleFactor="0.9" tree="@Tree.t:dna" weight="3.0" optimise="false"/>
 
-    <operator id="YuleModelTreeRootScaler.t:dna" spec="ScaleOperator" rootOnly="true" scaleFactor="0.5" tree="@Tree.t:dna" weight="3.0"/>
+    <operator id="YuleModelTreeRootScaler.t:dna" spec="ScaleOperator" rootOnly="true" scaleFactor="0.9" tree="@Tree.t:dna" weight="3.0" optimise="false"/>
 
     <operator id="YuleModelUniformOperator.t:dna" spec="Uniform" tree="@Tree.t:dna" weight="30.0"/>
 
-    <operator id="YuleModelSubtreeSlide.t:dna" spec="SubtreeSlide" tree="@Tree.t:dna" weight="15.0"/>
+    <operator id="YuleModelSubtreeSlide.t:dna" spec="SubtreeSlide" tree="@Tree.t:dna" weight="15.0" size="0.1" optimise="false"/>
 
     <operator id="YuleModelNarrow.t:dna" spec="Exchange" tree="@Tree.t:dna" weight="15.0"/>
 

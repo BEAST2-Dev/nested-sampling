@@ -1,6 +1,7 @@
 package beast.gss;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -240,7 +241,7 @@ public class NS extends MCMC {
 	protected void doLoop() throws IOException {
 		double Z = -Double.MAX_VALUE;
 		double delta = Double.POSITIVE_INFINITY; 
-	
+		List<Double> likelihoods = new ArrayList<>();
 		double N = particleCount;	
 		double lw;
 		
@@ -257,7 +258,43 @@ public class NS extends MCMC {
 		}
 		
 		double logW = Math.log(1.0 - Math.exp(-1.0/N));
-		for (int sampleNr = -burnIn; sampleNr <= chainLength; sampleNr++) {
+
+		double H = 0;
+		double Zb = -Double.MAX_VALUE; // Zb is the marginal likelihood estimate from the previous iteration
+
+		// sample from prior
+		minLikelihood = Double.NEGATIVE_INFINITY; // guarantee that likelihood is ignored when sampling from prior
+		for (int sampleNr = -burnIn; sampleNr < 0; sampleNr++) {
+			// find particle with minimum likelihood
+			int iMin = Randomizer.nextInt(particleCount);
+
+			// init state
+			state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
+
+			// init calculation nodes & oldLogPrior
+			robustlyCalcPosterior(posterior);
+			oldLogPrior = 0;
+			for (Distribution d : samplingDistribution) {
+				oldLogPrior += d.getArrayValue();
+			}
+			
+			for (int j = 0; j < subChainLength; j++) {
+				composeProposal(j + subChainLength * sampleNr);
+			}
+
+			particleStates[iMin] = state.toXML(sampleNr);
+			particleLikelihoods[iMin] = likelihood.getArrayValue();
+
+			callUserFunction(sampleNr);
+
+			if (posterior.getCurrentLogP() == Double.POSITIVE_INFINITY) {
+				throw new RuntimeException(
+						"Encountered a positive infinite posterior. This is a sign there may be improper priors or numeric instability in the model.");
+			}
+		}
+		
+		// run nested sampling
+		for (int sampleNr = 0; sampleNr <= chainLength; sampleNr++) {
 
 			// find particle with minimum likelihood
 			int iMin = 0;
@@ -269,11 +306,12 @@ public class NS extends MCMC {
 				}
 			}
 
+			likelihoods.add(minLikelihood);
 			// init state
-			//state.fromXML(particleStates[iMin]);
+			state.fromXML(particleStates[iMin]);
 			// RRB: use random selected state instead of the worst one?
 			// if so, replace above line with the next line
-			state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
+			//state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
 
 			// init calculation nodes & oldLogPrior
 			robustlyCalcPosterior(posterior);
@@ -296,8 +334,14 @@ public class NS extends MCMC {
 				lw = logW - (sampleNr - 1.0) / N;
 				double Li = minLikelihood;
 				double L = lw  + Li;
+				
 				Z = logPlus(Z, L);
-				Log.err.print(" " + Z);
+				H = Math.exp(L - Z) * Li - Z + Math.exp(Zb - Z)*(H + Zb);
+				Zb = Z;
+				if (sampleNr % 100 == 0) {
+			 		Log.info("Marginal likelihood: " + Z);
+			 		Log.info("Information: " + H);
+				}
 			}
 
 			particleStates[iMin] = state.toXML(sampleNr);
@@ -318,8 +362,21 @@ public class NS extends MCMC {
 						"Encountered a positive infinite posterior. This is a sign there may be numeric instability in the model.");
 			}
 		}
-		Log.info("Marginal likelihood: " + Z);
-	}
+		
+		double m = likelihoods.get(likelihoods.size()-1);
+ 		double Z2 = 0;
+ 		for (int i = 0; i < likelihoods.size(); i++) {
+ 			double Xi = Math.exp(-i/N);
+ 			double Xi_1 = Math.exp(-(i-1.0)/N);
+ 			double wi = Xi_1 - Xi;
+ 			Z2 += wi * Math.exp(likelihoods.get(i) - m);
+ 		}
+ 		Z2 = Math.log(Z2) + m;
+ 		
+ 		Log.info("Marginal likelihood: " + Z + " " + Z2);
+ 		Log.info("Information: " + H);
+ 		Log.info("SD: " + Math.sqrt(H/N));
+ 	}
 
 	double logPlus(double x, double y) {
 		return x > y ? x + Math.log(1.0 + Math.exp(y-x)) :  y + Math.log(1.0 + Math.exp(x-y));
@@ -335,7 +392,6 @@ public class NS extends MCMC {
 	 *            the current state
 	 * @return the selected {@link beast.core.Operator}
 	 */
-	@Override
 	protected Operator composeProposal(final int currState) {
 		state.store(currState);
 
