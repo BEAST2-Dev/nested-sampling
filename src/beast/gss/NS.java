@@ -15,6 +15,7 @@ import beast.core.Distribution;
 import beast.core.Input;
 import beast.core.Logger;
 import beast.core.MCMC;
+import beast.core.NSLogger;
 import beast.core.Operator;
 import beast.core.State;
 import beast.core.StateNodeInitialiser;
@@ -49,7 +50,7 @@ public class NS extends MCMC {
 					+ "If not specified, everything but the likelihood will be used as sampling distribution.");
 
 	public Input<Double> epsilonInput = new Input<>("epsilon", "stopping criterion: smallest change in ML estimate to accept", 1e-6);
-	public Input<Integer> historyLengthInput = new Input<>("history", "stopping criterion: number of steps between checking ", 2);
+	public Input<Integer> historyLengthInput = new Input<>("history", "stopping criterion: number of steps between checking ML estimates", 2);
 
 	private static final boolean printDebugInfo = false;
 
@@ -70,7 +71,7 @@ public class NS extends MCMC {
 	/** estimate of information **/
 	double H;
 	
-	
+	List<NSLogger> NSloggers;
 	
 
 	
@@ -146,6 +147,8 @@ public class NS extends MCMC {
 		
 		Z = -Double.MAX_VALUE;
 		H = 0;
+		
+		NSloggers = new ArrayList<>();
 	}
 
 	@Override
@@ -232,6 +235,20 @@ public class NS extends MCMC {
 		// initialises log so that log file headers are written, etc.
 		for (final Logger log : loggers) {
 			log.init();
+		}
+		
+		// split off NSloggers
+		for (int i = loggers.size() - 1; i >= 0; i--) {
+			Logger logger = loggers.get(i);
+			if (logger instanceof NSLogger) {
+				NSloggers.add((NSLogger) logger);
+				loggers.remove(i);
+			}
+		}
+		if (NSloggers.size() == 0) {
+			Log.warning("");
+			Log.warning("WARNING: no NSLoggers found -- no posterior sample will be generated");
+			Log.warning("");
 		}
 
 		doLoop();
@@ -348,11 +365,21 @@ public class NS extends MCMC {
 				}
 			}
 
+
 			likelihoods.add(minLikelihood);
+
+			// Store Li + discarded points				
+			state.fromXML(particleStates[iMin]);
+			robustlyCalcPosterior(posterior);
+			for (Logger logger: NSloggers) {
+				if (logger instanceof NSLogger) {
+					((NSLogger) logger).log(sampleNr, minLikelihood);
+				}
+			}
+			// mean(theta) = \sum_i theta * Li*wi/Z
+			// Z = \sum_i Li*wi
+			
 			// init state
-			//state.fromXML(particleStates[iMin]);
-			// RRB: use random selected state instead of the worst one?
-			// if so, replace above line with the next line
 			state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
 
 			// init calculation nodes & oldLogPrior
@@ -375,6 +402,7 @@ public class NS extends MCMC {
 
 				lw = logW - (sampleNr - 1.0) / N;
 				double Li = minLikelihood;
+				
 				double L = lw  + Li;
 				
 				Z = logPlus(Z, L);
