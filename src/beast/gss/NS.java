@@ -2,6 +2,7 @@ package beast.gss;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -15,6 +16,7 @@ import beast.core.Input;
 import beast.core.Logger;
 import beast.core.MCMC;
 import beast.core.Operator;
+import beast.core.State;
 import beast.core.StateNodeInitialiser;
 import beast.core.util.CompoundDistribution;
 import beast.core.util.Evaluator;
@@ -46,6 +48,9 @@ public class NS extends MCMC {
 			"probability distribution to sample from (e.g. a prior). "
 					+ "If not specified, everything but the likelihood will be used as sampling distribution.");
 
+	public Input<Double> epsilonInput = new Input<>("epsilon", "stopping criterion: smallest change in ML estimate to accept", 1e-6);
+	public Input<Integer> historyLengthInput = new Input<>("history", "stopping criterion: number of steps between checking ", 2);
+
 	private static final boolean printDebugInfo = false;
 
 	protected int particleCount;
@@ -58,8 +63,33 @@ public class NS extends MCMC {
 	protected Distribution likelihood;
 	protected Distribution[] samplingDistribution;
 
+	double newLogPrior, oldLogPrior;
+
+	/** marginal likelihood estimate **/
+	double Z;
+	/** estimate of information **/
+	double H;
+	
+	
+	
+
+	
+	public NS() {}
+	public NS(int chainLength, int preBurnin, int particleCount, int subChainLength, State state, List<Operator> operators, CompoundDistribution distribution) {
+		initByName("chainLength", chainLength, 
+				"preBurnin", preBurnin, 
+				"particleCount", particleCount,
+				"subChainLength", subChainLength,
+				"state", state,
+				"operator", operators,
+				"distribution", distribution);
+	}
+	
 	@Override
 	public void initAndValidate() {
+		if (historyLengthInput.get() < 2) {
+			throw new IllegalArgumentException("history must be 2 or larger");
+		}
 		super.initAndValidate();
 
 		particleCount = particleCountInput.get();
@@ -113,6 +143,9 @@ public class NS extends MCMC {
 				d.pDistributions.setValue(samplingDistribution[0], d);
 			}
 		}
+		
+		Z = -Double.MAX_VALUE;
+		H = 0;
 	}
 
 	@Override
@@ -239,7 +272,6 @@ public class NS extends MCMC {
 	 */
 	@Override
 	protected void doLoop() throws IOException {
-		double Z = -Double.MAX_VALUE;
 		double delta = Double.POSITIVE_INFINITY; 
 		List<Double> likelihoods = new ArrayList<>();
 		double N = particleCount;	
@@ -259,7 +291,6 @@ public class NS extends MCMC {
 		
 		double logW = Math.log(1.0 - Math.exp(-1.0/N));
 
-		double H = 0;
 		double Zb = -Double.MAX_VALUE; // Zb is the marginal likelihood estimate from the previous iteration
 
 		// sample from prior
@@ -294,7 +325,18 @@ public class NS extends MCMC {
 		}
 		
 		// run nested sampling
-		for (int sampleNr = 0; sampleNr <= chainLength; sampleNr++) {
+		/** number of steps without change before stopping **/
+		int HISTORY_LENGTH = historyLengthInput.get();
+		/** size of required change for stopping criterion **/
+		double EPSILON = epsilonInput.get();
+
+		
+
+		double [] mlHistory = new double[HISTORY_LENGTH];
+		Arrays.fill(mlHistory, -1.0);
+		int sampleNr = 0;
+		while (sampleNr <= chainLength && (sampleNr < HISTORY_LENGTH || 
+				Math.abs(mlHistory[(sampleNr -1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr - 1) % HISTORY_LENGTH]) > EPSILON)) {
 
 			// find particle with minimum likelihood
 			int iMin = 0;
@@ -308,10 +350,10 @@ public class NS extends MCMC {
 
 			likelihoods.add(minLikelihood);
 			// init state
-			state.fromXML(particleStates[iMin]);
+			//state.fromXML(particleStates[iMin]);
 			// RRB: use random selected state instead of the worst one?
 			// if so, replace above line with the next line
-			//state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
+			state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
 
 			// init calculation nodes & oldLogPrior
 			robustlyCalcPosterior(posterior);
@@ -342,6 +384,7 @@ public class NS extends MCMC {
 			 		Log.info("Marginal likelihood: " + Z);
 			 		Log.info("Information: " + H);
 				}
+				mlHistory[sampleNr % HISTORY_LENGTH] = Z;
 			}
 
 			particleStates[iMin] = state.toXML(sampleNr);
@@ -361,7 +404,11 @@ public class NS extends MCMC {
 				throw new RuntimeException(
 						"Encountered a positive infinite posterior. This is a sign there may be numeric instability in the model.");
 			}
+			sampleNr++;
 		}
+		Log.warning("Finished in " + sampleNr + " steps!");
+		Log.warning(Arrays.toString(mlHistory));
+		Log.warning("("+mlHistory[sampleNr % HISTORY_LENGTH] +"-"+ mlHistory[(sampleNr +1 )% HISTORY_LENGTH]+")/"+mlHistory[sampleNr % HISTORY_LENGTH] +">"+ EPSILON);
 		
 		double m = likelihoods.get(likelihoods.size()-1);
  		double Z2 = 0;
@@ -378,12 +425,27 @@ public class NS extends MCMC {
  		Log.info("SD: " + Math.sqrt(H/N));
  	}
 
+	/** return marginal likelihood estimate **/
+	public double getMarginalLikelihood() {
+		return Z;
+	}
+
+	/** return standard deviation of marginal likelihood estimate **/
+	public double getStandardDeviation() {
+		return Math.sqrt(H/particleCount);
+	}
+	
+	/** return estimate of information in the model **/
+	public double getInformation() {
+		return H;
+	}
+	
+	
 	double logPlus(double x, double y) {
 		return x > y ? x + Math.log(1.0 + Math.exp(y-x)) :  y + Math.log(1.0 + Math.exp(x-y));
 	}
 	
 	
-	double newLogPrior, oldLogPrior;
 
 	/**
 	 * The MCMC algorithm to compose proposal distributions and the operators.
