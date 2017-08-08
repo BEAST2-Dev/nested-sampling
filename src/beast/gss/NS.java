@@ -74,16 +74,17 @@ public class NS extends MCMC {
 	List<NSLogger> NSloggers;
 	
 
-	
 	public NS() {}
-	public NS(int chainLength, int preBurnin, int particleCount, int subChainLength, State state, List<Operator> operators, CompoundDistribution distribution) {
+	
+	public NS(int chainLength, int preBurnin, int particleCount, int subChainLength, State state, List<Operator> operators, CompoundDistribution distribution, Double epsilon) {
 		initByName("chainLength", chainLength, 
 				"preBurnin", preBurnin, 
 				"particleCount", particleCount,
 				"subChainLength", subChainLength,
 				"state", state,
 				"operator", operators,
-				"distribution", distribution);
+				"distribution", distribution,
+				"epsilon", epsilon);
 	}
 	
 	@Override
