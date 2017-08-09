@@ -206,6 +206,8 @@ public class NSLogAnalyser extends LogAnalyser {
 	}
 
     public void print(PrintStream out) {
+    	out.println("#Particles = " + particleCount);
+    	
     	// set up header for prefix, if any is specified
     	String prefix = System.getProperty("prefix");
     	String prefixHead = (prefix == null ? "" : "prefix ");
@@ -322,7 +324,7 @@ public class NSLogAnalyser extends LogAnalyser {
                 analyser = new NSLogAnalyser(files.get(0), burninPercentage, quiet, N.get(0));
                 for (int j = 1; j < files.size(); j++) {
                 	String file = files.get(j);
-                	NSLogAnalyser analyser2 = new NSLogAnalyser(file, burninPercentage, quiet, N.get(i % N.size()));
+                	NSLogAnalyser analyser2 = new NSLogAnalyser(file, burninPercentage, quiet, N.get(j % N.size()));
                 	analyser = new NSLogAnalyser(analyser, analyser2);
                 }
                 analyser.calcStats();
