@@ -50,7 +50,7 @@ public class NS extends MCMC {
 					+ "If not specified, everything but the likelihood will be used as sampling distribution.");
 
 	public Input<Double> epsilonInput = new Input<>("epsilon", "stopping criterion: smallest change in ML estimate to accept", 1e-6);
-	public Input<Integer> historyLengthInput = new Input<>("history", "stopping criterion: number of steps between checking ML estimates", 2);
+	public Input<Double> stopFactorInput = new Input<>("stopFactor", "stopping criterion: use at least stopfactor * Information * particleCount steps", 2.0);
 
 	private static final boolean printDebugInfo = false;
 
@@ -89,9 +89,9 @@ public class NS extends MCMC {
 	
 	@Override
 	public void initAndValidate() {
-		if (historyLengthInput.get() < 2) {
-			throw new IllegalArgumentException("history must be 2 or larger");
-		}
+//		if (historyLengthInput.get() < 2) {
+//			throw new IllegalArgumentException("history must be 2 or larger");
+//		}
 		super.initAndValidate();
 
 		particleCount = particleCountInput.get();
@@ -344,17 +344,18 @@ public class NS extends MCMC {
 		
 		// run nested sampling
 		/** number of steps without change before stopping **/
-		int HISTORY_LENGTH = historyLengthInput.get();
+		int HISTORY_LENGTH = 2;//historyLengthInput.get();
 		/** size of required change for stopping criterion **/
 		double EPSILON = epsilonInput.get();
 
+		double stopFactor = stopFactorInput.get();
 		
 
 		double [] mlHistory = new double[HISTORY_LENGTH];
-		Arrays.fill(mlHistory, -1.0);
+		mlHistory[0] = -1.0; // to pass stop criterion when sampleNr = 0
 		int sampleNr = 0;
-		while (sampleNr <= chainLength && (sampleNr < HISTORY_LENGTH || 
-				Math.abs(mlHistory[(sampleNr -1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr - 1) % HISTORY_LENGTH]) > EPSILON)) {
+		while (sampleNr <= chainLength && (sampleNr < stopFactor * H * particleCount ||
+				Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH-1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH- 1) % HISTORY_LENGTH]) > EPSILON)) {
 
 			// find particle with minimum likelihood
 			int iMin = 0;
@@ -370,7 +371,9 @@ public class NS extends MCMC {
 			likelihoods.add(minLikelihood);
 
 			// Store Li + discarded points				
-			state.fromXML(particleStates[iMin]);
+			if (particleCount > 1) {
+				state.fromXML(particleStates[iMin]);
+			}
 			robustlyCalcPosterior(posterior);
 			for (Logger logger: NSloggers) {
 				if (logger instanceof NSLogger) {
@@ -380,11 +383,13 @@ public class NS extends MCMC {
 			// mean(theta) = \sum_i theta * Li*wi/Z
 			// Z = \sum_i Li*wi
 			
-			// init state
-			state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
+			if (particleCount > 1) {
+				// init state
+				state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
 
-			// init calculation nodes & oldLogPrior
-			robustlyCalcPosterior(posterior);
+				// init calculation nodes & oldLogPrior
+				robustlyCalcPosterior(posterior);
+			}
 			oldLogPrior = 0;
 			for (Distribution d : samplingDistribution) {
 				oldLogPrior += d.getArrayValue();
@@ -470,7 +475,7 @@ public class NS extends MCMC {
 	}
 	
 	
-	double logPlus(double x, double y) {
+	public static double logPlus(double x, double y) {
 		return x > y ? x + Math.log(1.0 + Math.exp(y-x)) :  y + Math.log(1.0 + Math.exp(x-y));
 	}
 	
