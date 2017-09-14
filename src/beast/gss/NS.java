@@ -307,8 +307,9 @@ public class NS extends MCMC {
 			Log.warning.println("Please wait while BEAST takes " + burnIn + " pre-burnin samples");
 		}
 		
-		double logW = Math.log(1.0 - Math.exp(-1.0/N));
-
+		//double logW = Math.log(1.0 - Math.exp(-1.0/N));
+		double logW = Math.log(1.0 - Math.exp(-2.0/N)) - Math.log(2.0) ;
+		 
 		double Zb = -Double.MAX_VALUE; // Zb is the marginal likelihood estimate from the previous iteration
 
 		// sample from prior
@@ -354,6 +355,10 @@ public class NS extends MCMC {
 		double [] mlHistory = new double[HISTORY_LENGTH];
 		mlHistory[0] = -1.0; // to pass stop criterion when sampleNr = 0
 		int sampleNr = 0;
+		// continue while
+		// o we have not reached a user specied upper bound of steps (through chainLength) AND
+		//      o the number of samples is less than 2 * Information * #particles (stopFactor = 2 can be changed) OR
+		//      o the relative gain in ML estimate is less than ESPILON
 		while (sampleNr <= chainLength && (sampleNr < stopFactor * H * particleCount ||
 				Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH-1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH- 1) % HISTORY_LENGTH]) > EPSILON)) {
 
@@ -415,8 +420,7 @@ public class NS extends MCMC {
 				H = Math.exp(L - Z) * Li - Z + Math.exp(Zb - Z)*(H + Zb);
 				Zb = Z;
 				if (sampleNr % 100 == 0) {
-			 		Log.info("Marginal likelihood: " + Z);
-			 		Log.info("Information: " + H);
+			 		Log.info("ML: " + Z + " Information: " + H);
 				}
 				mlHistory[sampleNr % HISTORY_LENGTH] = Z;
 			}
@@ -440,21 +444,26 @@ public class NS extends MCMC {
 			}
 			sampleNr++;
 		}
-		Log.warning("Finished in " + sampleNr + " steps!");
-		Log.warning(Arrays.toString(mlHistory));
-		Log.warning("("+mlHistory[sampleNr % HISTORY_LENGTH] +"-"+ mlHistory[(sampleNr +1 )% HISTORY_LENGTH]+")/"+mlHistory[sampleNr % HISTORY_LENGTH] +">"+ EPSILON);
-		
-		double m = likelihoods.get(likelihoods.size()-1);
- 		double Z2 = 0;
- 		for (int i = 0; i < likelihoods.size(); i++) {
- 			double Xi = Math.exp(-i/N);
- 			double Xi_1 = Math.exp(-(i-1.0)/N);
- 			double wi = Xi_1 - Xi;
- 			Z2 += wi * Math.exp(likelihoods.get(i) - m);
- 		}
- 		Z2 = Math.log(Z2) + m;
- 		
- 		Log.info("Marginal likelihood: " + Z + " " + Z2);
+		Log.info("Finished in " + sampleNr + " steps!");
+
+		if (System.getProperty("beast.debug") != null) { 
+			Log.warning(Arrays.toString(mlHistory));
+			Log.warning("("+mlHistory[sampleNr % HISTORY_LENGTH] +"-"+ mlHistory[(sampleNr +1 )% HISTORY_LENGTH]+")/"+mlHistory[sampleNr % HISTORY_LENGTH] +">"+ EPSILON);
+			
+			double m = likelihoods.get(likelihoods.size()-1);
+	 		double Z2 = 0;
+	 		for (int i = 0; i < likelihoods.size(); i++) {
+	 			double Xi = Math.exp(-i/N);
+	 			double Xi_1 = Math.exp(-(i-1.0)/N);
+	 			double wi = Xi_1 - Xi;
+	 			Z2 += wi * Math.exp(likelihoods.get(i) - m);
+	 		}
+	 		Z2 = Math.log(Z2) + m;
+	 		
+	 		Log.info("Marginal likelihood: " + Z + " " + Z2);
+		} else {
+	 		Log.info("Marginal likelihood: " + Z);			
+		}
  		Log.info("Information: " + H);
  		Log.info("SD: " + Math.sqrt(H/N));
  	}

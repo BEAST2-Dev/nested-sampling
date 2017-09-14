@@ -85,7 +85,8 @@ public class NSLogAnalyser extends LogAnalyser {
 		Z = -Double.MAX_VALUE;
  		int N = particleCount;
  		double [] weights = new double[NSLikelihoods.length];
- 		double logW = Math.log(1.0 - Math.exp(-1.0/N));
+ 		//	double logW = Math.log(1.0 - Math.exp(-1.0/N));
+		double logW = Math.log(1.0 - Math.exp(-2.0/N)) - Math.log(2.0) ;
  		for (int i = 0; i < NSLikelihoods.length; i++) {
  			double lw = logW - (i - 1.0) / N;
  			double L = lw  + NSLikelihoods[i];
