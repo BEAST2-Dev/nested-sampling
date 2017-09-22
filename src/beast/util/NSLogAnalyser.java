@@ -10,8 +10,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import beast.app.BEASTVersion2;
+import beast.app.treeannotator.TreeAnnotator;
 import beast.app.util.Utils;
 import beast.core.util.Log;
+import beast.evolution.tree.Tree;
 import beast.gss.NS;
 import beast.util.LogAnalyser;
 
@@ -240,7 +242,6 @@ public class NSLogAnalyser extends LogAnalyser {
 	        int sampleNr = 0;
 	        for (int j = 0; j < entryCount.length; j++) {
 	        	for (int k = 0; k < entryCount[j]; k++) {
-	        		Log.warning("Entry:" + j);
 	        		out.print(sampleNr + "\t");
 			        for (int i = 2; i < m_sLabels.length; i++) {
 			        	out.print(m_fTraces[i][j] + "\t");
@@ -252,6 +253,31 @@ public class NSLogAnalyser extends LogAnalyser {
 
 		} else {
 			// resample tree file
+			beast.app.treeannotator.TreeAnnotator.MemoryFriendlyTreeSet treeset = new TreeAnnotator().new MemoryFriendlyTreeSet(treeFile, 0);
+			treeset.reset();
+			Tree tree = treeset.next();
+			tree.init(out);
+			out.println();
+			treeset.reset();
+	        int sampleNr = 0;
+	        int j = 0;
+			while (treeset.hasNext()) {
+				tree = treeset.next();
+				if (j >= entryCount.length) {
+					throw new IllegalArgumentException("There are more trees in the tree set than there are samples in the log file");
+				}
+	        	for (int k = 0; k < entryCount[j]; k++) {
+	        		tree.log(sampleNr, out);
+			        out.println();
+		        	sampleNr++;
+	        	}
+				j++;
+			}
+			tree.close(out);
+			if (j < weights.length) {
+				throw new IllegalArgumentException("There are fewer trees in the tree set than there are samples in the log file");
+			}
+			
 		}
 		out.close();
 		Log.warning("Log file written to " + outFile);
