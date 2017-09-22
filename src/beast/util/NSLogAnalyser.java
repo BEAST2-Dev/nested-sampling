@@ -17,12 +17,21 @@ import beast.util.LogAnalyser;
 
 public class NSLogAnalyser extends LogAnalyser {
 	public int particleCount = -1;
+	String outFile, treeFile;
+	double [] weights;
+	double ESS;
 	
     public NSLogAnalyser(String absolutePath, int burninPercentage, boolean quiet, int particleCount) throws IOException {
 		super(absolutePath, burninPercentage, quiet, false);
 		this.particleCount = particleCount;
 	}
 
+    public NSLogAnalyser(String absolutePath, String treeFile, String outFile, int burninPercentage, boolean quiet, int particleCount) throws IOException {
+		super(absolutePath, burninPercentage, quiet, false);
+		this.particleCount = particleCount;
+		this.treeFile = treeFile;
+		this.outFile = outFile;
+	}
 
 	public NSLogAnalyser(NSLogAnalyser analyser, NSLogAnalyser analyser2) {
 		// make sure the same labels are used
@@ -84,9 +93,9 @@ public class NSLogAnalyser extends LogAnalyser {
  		double Z = 0;
 		Z = -Double.MAX_VALUE;
  		int N = particleCount;
- 		double [] weights = new double[NSLikelihoods.length];
- 		//	double logW = Math.log(1.0 - Math.exp(-1.0/N));
-		double logW = Math.log(1.0 - Math.exp(-2.0/N)) - Math.log(2.0) ;
+ 		weights = new double[NSLikelihoods.length];
+ 		double logW = Math.log(1.0 - Math.exp(-1.0/N));
+		//double logW = Math.log(1.0 - Math.exp(-2.0/N)) - Math.log(2.0) ;
  		for (int i = 0; i < NSLikelihoods.length; i++) {
  			double lw = logW - (i - 1.0) / N;
  			double L = lw  + NSLikelihoods[i];
@@ -110,7 +119,7 @@ public class NSLogAnalyser extends LogAnalyser {
  		}
  		
  		// max nr of posterior samples
- 		double ESS = 0;
+ 		ESS = 0;
  		for (int i = 0; i < NSLikelihoods.length; i++) {
  			if (weights[i] > 0) {
  				ESS -= weights[i]* Math.log(weights[i]);
@@ -198,7 +207,55 @@ public class NSLogAnalyser extends LogAnalyser {
             }
         }
         logln("\n");
+        
+        
+        if (outFile != null) {
+        	try {
+				resampleToFile();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        }
+        
     } // calcStats
+
+	private void resampleToFile() throws IOException {
+		PrintStream out = new PrintStream(new File(outFile));
+		int [] entryCount = new int[weights.length];
+		for (int i = 0; i < ESS; i++) {
+			entryCount[Randomizer.randomChoicePDF(weights)]++;
+		}
+		
+		if (treeFile == null) {
+			// resample to log file
+			
+			// print header
+			out.print("Sample\t");
+	        for (int i = 2; i < m_sLabels.length; i++) {
+	        	out.print(m_sLabels[i] + "\t");
+	        }
+	        out.println();
+
+	        // print entries
+	        int sampleNr = 0;
+	        for (int j = 0; j < entryCount.length; j++) {
+	        	for (int k = 0; k < entryCount[j]; k++) {
+	        		Log.warning("Entry:" + j);
+	        		out.print(sampleNr + "\t");
+			        for (int i = 2; i < m_sLabels.length; i++) {
+			        	out.print(m_fTraces[i][j] + "\t");
+			        }
+			        out.println();
+		        	sampleNr++;
+	        	}
+	        }
+
+		} else {
+			// resample tree file
+		}
+		out.close();
+		Log.warning("Log file written to " + outFile);
+	}
 
 	private Double[] newDouble(int items) {
 		Double [] array = new Double[items];
@@ -263,6 +320,8 @@ public class NSLogAnalyser extends LogAnalyser {
         	int burninPercentage = 0;
             boolean quiet = false;
         	List<String> files = new ArrayList<>();
+        	List<String> treeFiles = new ArrayList<>();
+        	String outFile = null;
         	List<Integer> N = new ArrayList<>();
         	int i = 0;
         	while (i < args.length) {
@@ -292,6 +351,18 @@ public class NSLogAnalyser extends LogAnalyser {
                     i++;
                     break;
 
+                case "-tree":
+                	do {
+                    	i++;
+                		treeFiles.add(args[i]);
+                	} while (i+2 < args.length && !args[i+1].startsWith("-"));
+                    i++;
+                    break;
+                case "-out":
+                	i++;
+                	outFile = args[i];
+                    i++;
+                    break;
         		case "-h":
         		case "-help":
         		case "--help":
@@ -309,7 +380,7 @@ public class NSLogAnalyser extends LogAnalyser {
         	if (files.size() == 0) {
         		// no file specified, open file dialog to select one
                 BEASTVersion2 version = new BEASTVersion2();
-                File file = Utils.getLoadFile("LogAnalyser " + version.getVersionString() + " - Select log file to analyse",
+                File file = Utils.getLoadFile("NSLogAnalyser " + version.getVersionString() + " - Select log file to analyse",
                         null, "BEAST log (*.log) Files", "log", "txt");
                 if (file == null) {
                     return;
@@ -322,12 +393,17 @@ public class NSLogAnalyser extends LogAnalyser {
         		if (N.size() == 0) {
         			N.add(1);
         		}
-                analyser = new NSLogAnalyser(files.get(0), burninPercentage, quiet, N.get(0));
-                for (int j = 1; j < files.size(); j++) {
-                	String file = files.get(j);
-                	NSLogAnalyser analyser2 = new NSLogAnalyser(file, burninPercentage, quiet, N.get(j % N.size()));
-                	analyser = new NSLogAnalyser(analyser, analyser2);
-                }
+        		if (treeFiles.size() > 0) {
+                    analyser = new NSLogAnalyser(files.get(0), treeFiles.get(0), outFile, burninPercentage, quiet, N.get(0));
+        		} else {
+	                analyser = new NSLogAnalyser(files.get(0), burninPercentage, quiet, N.get(0));
+	                for (int j = 1; j < files.size(); j++) {
+	                	String file = files.get(j);
+	                	NSLogAnalyser analyser2 = new NSLogAnalyser(file, burninPercentage, quiet, N.get(j % N.size()));
+	                	analyser = new NSLogAnalyser(analyser, analyser2);
+	                }
+        		}
+        		analyser.setOutFile(outFile);
                 analyser.calcStats();
                 analyser.print(System.out);
                 
@@ -335,5 +411,10 @@ public class NSLogAnalyser extends LogAnalyser {
     } catch (Exception e) {
         e.printStackTrace();
     }
+    Log.warning("Done!");
 }
+
+	private void setOutFile(String outFile2) {
+		outFile = outFile2;		
+	}
 }
