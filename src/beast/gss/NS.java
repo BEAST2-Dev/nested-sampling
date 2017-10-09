@@ -22,6 +22,7 @@ import beast.core.StateNodeInitialiser;
 import beast.core.util.CompoundDistribution;
 import beast.core.util.Evaluator;
 import beast.core.util.Log;
+import beast.util.NSLogAnalyser;
 import beast.util.Randomizer;
 
 
@@ -41,6 +42,8 @@ Start with  N points θ1,...,θN sampled from prior.
 
 @Description("Nested sampling for phylogenetics")
 public class NS extends MCMC {
+	final static int SAMPLE_COUNT = 100;
+	
 	public Input<Integer> particleCountInput = new Input<>("particleCount", "number of particles (default 100)", 100);
 	public Input<Integer> subChainLengthInput = new Input<>("subChainLength",
 			"number of MCMC samples for each epoch (default 1000)", 1000);
@@ -356,7 +359,7 @@ public class NS extends MCMC {
 		mlHistory[0] = -1.0; // to pass stop criterion when sampleNr = 0
 		int sampleNr = 0;
 		// continue while
-		// o we have not reached a user specied upper bound of steps (through chainLength) AND
+		// o we have not reached a user specified upper bound of steps (through chainLength) AND
 		//      o the number of samples is less than 2 * Information * #particles (stopFactor = 2 can be changed) OR
 		//      o the relative gain in ML estimate is less than ESPILON
 		while (sampleNr <= chainLength && (sampleNr < stopFactor * H * particleCount ||
@@ -445,6 +448,36 @@ public class NS extends MCMC {
 			sampleNr++;
 		}
 		Log.info("Finished in " + sampleNr + " steps!");
+		
+		
+ 		
+		double [] Zestimates = new double[SAMPLE_COUNT];
+		for (int k = 0; k < SAMPLE_COUNT; k++) {
+ 	 		double logX = 0.0;
+	 		double Z = 0;
+			Z = -Double.MAX_VALUE;
+	 		for (int i = 0; i < likelihoods.size(); i++) {
+	 			double u = NSLogAnalyser.nextBeta(N, 1.0); 			
+	 			lw = logX + Math.log(1.0 - u);
+	 			double L = lw  + likelihoods.get(i);
+	 			Z = NS.logPlus(Z, L);
+	 			logX += Math.log(u);
+	 		}
+	 		Zestimates[k] = Z;
+ 		}
+		double sum = 0;
+		for (double d : Zestimates) {
+			sum += d;
+		}
+		Z = sum / SAMPLE_COUNT;
+		double sum2 = 0;
+		for (double d : Zestimates) {
+			sum2 += (d - Z) * (d - Z);
+		}
+		double var = sum2/(SAMPLE_COUNT - 1.0);
+		double stdev = Math.sqrt(var);
+ 		Log.warning("Marginal likelihood: " + Z + "(" + stdev +")");
+
 
 		if (System.getProperty("beast.debug") != null) { 
 			Log.warning(Arrays.toString(mlHistory));

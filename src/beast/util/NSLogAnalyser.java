@@ -9,12 +9,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.math.MathException;
+import org.apache.commons.math.distribution.BetaDistribution;
+import org.apache.commons.math.distribution.BetaDistributionImpl;
+
 import beast.app.BEASTVersion2;
 import beast.app.treeannotator.TreeAnnotator;
 import beast.app.util.Utils;
 import beast.core.util.Log;
 import beast.evolution.tree.Tree;
 import beast.gss.NS;
+import beast.math.distributions.Beta;
 import beast.util.LogAnalyser;
 
 public class NSLogAnalyser extends LogAnalyser {
@@ -96,6 +101,7 @@ public class NSLogAnalyser extends LogAnalyser {
 		Z = -Double.MAX_VALUE;
  		int N = particleCount;
  		weights = new double[NSLikelihoods.length];
+ 		
  		double logW = Math.log(1.0 - Math.exp(-1.0/N));
 		//double logW = Math.log(1.0 - Math.exp(-2.0/N)) - Math.log(2.0) ;
  		for (int i = 0; i < NSLikelihoods.length; i++) {
@@ -107,6 +113,34 @@ public class NSLogAnalyser extends LogAnalyser {
  		Log.warning("Marginal likelihood: " + Z);
 
 
+ 		double logX = 0.0;
+ 		for (int i = 0; i < NSLikelihoods.length; i++) {
+ 			double u = nextBeta(N, 1.0); 			
+ 			double lw = logX + Math.log(1.0 - u);
+ 			double L = lw  + NSLikelihoods[i];
+ 			Z = NS.logPlus(Z, L);
+ 			weights[i] = L; 			
+ 			logX += Math.log(u);
+ 		}
+ 		Log.warning("Marginal likelihood: " + Z);
+ 		
+ 		double logX = 0.0;
+		double u = nextBeta(N, 1.0);
+ 		double nextu = nextBeta(N, 1.0);;
+ 		for (int i = 0; i < NSLikelihoods.length; i++) {
+ 			double lw = logX + Math.log(1.0 - u * nextu) - Math.log(2.0);
+ 			double L = lw  + NSLikelihoods[i];
+ 			Z = NS.logPlus(Z, L);
+ 			weights[i] = L;
+ 			
+ 			u = nextu;
+ 			nextu = nextBeta(N, 1.0);
+ 			logX += Math.log(u);
+ 		}
+ 		Log.warning("Marginal likelihood: " + Z);
+
+ 		
+ 		
  		double max = weights[0];
  		for (double d : weights) {
  			max = Math.max(d,  max);
@@ -442,5 +476,17 @@ public class NSLogAnalyser extends LogAnalyser {
 
 	private void setOutFile(String outFile2) {
 		outFile = outFile2;		
+	}
+
+
+	static public double nextBeta(double alpha, double beta) {
+		BetaDistribution distr = new BetaDistributionImpl(alpha, beta);
+		double v = 0;
+		try {
+			v = distr.inverseCumulativeProbability(Randomizer.nextDouble());
+		} catch (MathException e) {
+			e.printStackTrace();
+		}
+		return v;		
 	}
 }
