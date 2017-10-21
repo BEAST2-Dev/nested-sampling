@@ -76,6 +76,8 @@ public class NS extends MCMC {
 	
 	List<NSLogger> NSloggers;
 	
+	List<Double> likelihoods = new ArrayList<>();
+	boolean finished = false;
 
 	public NS() {}
 	
@@ -272,7 +274,7 @@ public class NS extends MCMC {
 		// Randomizer.storeToFile(stateFileName);
 	} // run;
 
-	private void initParticles() {
+	protected void initParticles() {
 		minLikelihood = Double.NEGATIVE_INFINITY;
 		for (int i = 0; i < particleCount; i++) {
 			for (int j = 0; j < subChainLength; j++) {
@@ -293,10 +295,7 @@ public class NS extends MCMC {
 	 */
 	@Override
 	protected void doLoop() throws IOException {
-		double delta = Double.POSITIVE_INFINITY; 
-		List<Double> likelihoods = new ArrayList<>();
 		double N = particleCount;	
-		double lw;
 		
 		oldLogPrior = 0;
 		for (Distribution d : samplingDistribution) {
@@ -310,10 +309,6 @@ public class NS extends MCMC {
 			Log.warning.println("Please wait while BEAST takes " + burnIn + " pre-burnin samples");
 		}
 		
-		//double logW = Math.log(1.0 - Math.exp(-1.0/N));
-		double logW = Math.log(1.0 - Math.exp(-2.0/N)) - Math.log(2.0) ;
-		 
-		double Zb = -Double.MAX_VALUE; // Zb is the marginal likelihood estimate from the previous iteration
 
 		// sample from prior
 		minLikelihood = Double.NEGATIVE_INFINITY; // guarantee that likelihood is ignored when sampling from prior
@@ -346,7 +341,51 @@ public class NS extends MCMC {
 			}
 		}
 		
+
+		doInnerLoop(likelihoods);
+		
+		
+ 		
+		double [] Zestimates = new double[SAMPLE_COUNT];
+		for (int k = 0; k < SAMPLE_COUNT; k++) {
+ 	 		double logX = 0.0;
+	 		double Z = 0;
+			Z = -Double.MAX_VALUE;
+	 		for (int i = 0; i < likelihoods.size(); i++) {
+	 			double u = NSLogAnalyser.nextBeta(N, 1.0); 			
+	 			double lw = logX + Math.log(1.0 - u);
+	 			double L = lw  + likelihoods.get(i);
+	 			Z = NS.logPlus(Z, L);
+	 			logX += Math.log(u);
+	 		}
+	 		Zestimates[k] = Z;
+ 		}
+		double sum = 0;
+		for (double d : Zestimates) {
+			sum += d;
+		}
+		Z = sum / SAMPLE_COUNT;
+		double sum2 = 0;
+		for (double d : Zestimates) {
+			sum2 += (d - Z) * (d - Z);
+		}
+		double var = sum2/(SAMPLE_COUNT - 1.0);
+		double stdev = Math.sqrt(var);
+ 		Log.info("Marginal likelihood: " + Z + "(" + stdev +")");
+
+ 		Log.info("Information: " + H);
+ 		Log.info("SD: " + Math.sqrt(H/N));
+ 	}
+
+	protected void doInnerLoop(List<Double> likelihoods) throws IOException {
 		// run nested sampling
+		double N = particleCount;	
+		double lw;
+		//double logW = Math.log(1.0 - Math.exp(-1.0/N));
+		double logW = Math.log(1.0 - Math.exp(-2.0/N)) - Math.log(2.0) ;
+		 
+		double Zb = -Double.MAX_VALUE; // Zb is the marginal likelihood estimate from the previous iteration
+
 		/** number of steps without change before stopping **/
 		int HISTORY_LENGTH = 2;//historyLengthInput.get();
 		/** size of required change for stopping criterion **/
@@ -391,22 +430,8 @@ public class NS extends MCMC {
 			// mean(theta) = \sum_i theta * Li*wi/Z
 			// Z = \sum_i Li*wi
 			
-			if (particleCount > 1) {
-				// init state
-				state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
-
-				// init calculation nodes & oldLogPrior
-				robustlyCalcPosterior(posterior);
-			}
-			oldLogPrior = 0;
-			for (Distribution d : samplingDistribution) {
-				oldLogPrior += d.getArrayValue();
-			}
+			updateParticle(sampleNr);
 			
-			for (int j = 0; j < subChainLength; j++) {
-				composeProposal(j + subChainLength * sampleNr);
-			}
-
 			if (sampleNr > 0) {
 //				double Xi = Math.exp(-sampleNr/N);
 //				double Xi_1 = Math.exp(-(sampleNr-1.0)/N);
@@ -427,9 +452,8 @@ public class NS extends MCMC {
 				}
 				mlHistory[sampleNr % HISTORY_LENGTH] = Z;
 			}
-
-			particleStates[iMin] = state.toXML(sampleNr);
-			particleLikelihoods[iMin] = likelihood.getArrayValue();
+			
+			updateParticleState(iMin, state.toXML(sampleNr), likelihood.getArrayValue());
 
 			callUserFunction(sampleNr);
 
@@ -449,36 +473,6 @@ public class NS extends MCMC {
 		}
 		Log.info("Finished in " + sampleNr + " steps!");
 		
-		
- 		
-		double [] Zestimates = new double[SAMPLE_COUNT];
-		for (int k = 0; k < SAMPLE_COUNT; k++) {
- 	 		double logX = 0.0;
-	 		double Z = 0;
-			Z = -Double.MAX_VALUE;
-	 		for (int i = 0; i < likelihoods.size(); i++) {
-	 			double u = NSLogAnalyser.nextBeta(N, 1.0); 			
-	 			lw = logX + Math.log(1.0 - u);
-	 			double L = lw  + likelihoods.get(i);
-	 			Z = NS.logPlus(Z, L);
-	 			logX += Math.log(u);
-	 		}
-	 		Zestimates[k] = Z;
- 		}
-		double sum = 0;
-		for (double d : Zestimates) {
-			sum += d;
-		}
-		Z = sum / SAMPLE_COUNT;
-		double sum2 = 0;
-		for (double d : Zestimates) {
-			sum2 += (d - Z) * (d - Z);
-		}
-		double var = sum2/(SAMPLE_COUNT - 1.0);
-		double stdev = Math.sqrt(var);
- 		Log.warning("Marginal likelihood: " + Z + "(" + stdev +")");
-
-
 		if (System.getProperty("beast.debug") != null) { 
 			Log.warning(Arrays.toString(mlHistory));
 			Log.warning("("+mlHistory[sampleNr % HISTORY_LENGTH] +"-"+ mlHistory[(sampleNr +1 )% HISTORY_LENGTH]+")/"+mlHistory[sampleNr % HISTORY_LENGTH] +">"+ EPSILON);
@@ -494,12 +488,34 @@ public class NS extends MCMC {
 	 		Z2 = Math.log(Z2) + m;
 	 		
 	 		Log.info("Marginal likelihood: " + Z + " " + Z2);
-		} else {
-	 		Log.info("Marginal likelihood: " + Z);			
 		}
- 		Log.info("Information: " + H);
- 		Log.info("SD: " + Math.sqrt(H/N));
- 	}
+		finished = true;
+	}
+
+	protected void updateParticleState(int iMin, String state, double likelihood) {
+		particleStates[iMin] = state;
+		particleLikelihoods[iMin] = likelihood;
+	}
+
+	// propose a new starting state for particle such that likelihood > minLikelihood
+	protected void updateParticle(int sampleNr) {
+		if (particleCount > 1) {
+			// init state
+			state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
+
+			// init calculation nodes & oldLogPrior
+			robustlyCalcPosterior(posterior);
+
+		}
+		oldLogPrior = 0;
+		for (Distribution d : samplingDistribution) {
+			oldLogPrior += d.getArrayValue();
+		}
+		
+		for (int j = 0; j < subChainLength; j++) {
+			composeProposal(j + subChainLength * sampleNr);
+		}
+	}
 
 	/** return marginal likelihood estimate **/
 	public double getMarginalLikelihood() {
