@@ -1,3 +1,4 @@
+
 package beast.gss;
 
 import java.io.IOException;
@@ -11,7 +12,7 @@ import beast.util.Randomizer;
 public class NSThread extends NS {
 	CountDownLatch countDown;
 	Map<String, Double> particlePool;
-	CountDownLatch nsCountDown;
+//	CountDownLatch nsCountDown;
 	
 	
 	@Override
@@ -30,21 +31,25 @@ public class NSThread extends NS {
 	
 	@Override
 	protected void updateParticle(int sampleNr) {
-        nsCountDown = new CountDownLatch(1);
-        countDown.countDown();
-        try {
-			nsCountDown.await();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//        nsCountDown = new CountDownLatch(1);
+//        countDown.countDown();
+//        try {
+//			nsCountDown.await();
+//		} catch (InterruptedException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
         int n = particlePool.size();
-		String [] states = particlePool.entrySet().toArray(new String[]{});
-		int i = Randomizer.nextInt(n);
-		while (particlePool.get(states[i]) < minLikelihood) {
-			i = Randomizer.nextInt(n);
+        synchronized (particlePool) {
+            Object [] states = particlePool.keySet().toArray();			
+
+            //String [] states = (String []) o;
+    		int i = Randomizer.nextInt(n);
+    		while (particlePool.get(states[i]) < minLikelihood) {
+    			i = Randomizer.nextInt(n);
+    		}
+    		state.fromXML((String) states[i]);
 		}
-		state.fromXML(states[i]);
 
 		// init calculation nodes & oldLogPrior
 		robustlyCalcPosterior(posterior);
@@ -62,8 +67,10 @@ public class NSThread extends NS {
 	@Override
 	protected void updateParticleState(int iMin, String state, double likelihood) {
 		String minState = particleStates[iMin];
-		particlePool.remove(minState);
-		particlePool.put(state, likelihood);
+		synchronized (particlePool) {
+			particlePool.remove(minState);
+			particlePool.put(state, likelihood);
+		}
 		super.updateParticleState(iMin, state, likelihood);
 	}
 

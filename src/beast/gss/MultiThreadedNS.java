@@ -44,17 +44,20 @@ public class MultiThreadedNS extends NS {
 	    
 	    XMLProducer xmlProducer = new XMLProducer();
 	    String xml = xmlProducer.toRawXML(this);
-	    xml = xml.replaceAll("spec=\"" + this.getClass().getCanonicalName() + "\"",
-	    		"spec=\"" + NSThread.class.getCanonicalName() + "\"");
+	    xml = "<beast version='2.4'>\n" +
+	    		xml.replaceAll("spec='" + this.getClass().getCanonicalName() + "'",
+	    		"spec='" + NSThread.class.getCanonicalName() + "'")
+	    	+ "\n</beast>";
 	    
 	    NS = new NSThread[threadCount];
 	    runnable = new CoreRunnable[threadCount];
 	    
-	    XMLParser xmlParser = new XMLParser();
 	    for (int i = 0; i < threadCount; i++) {
 	    	try {
-	    		String xml2 = xml.replaceAll("fileName=\"", "fileName=\"" + i);
-				NS[i] = (NSThread) xmlParser.parseFragment(xml2, true);
+	    	    XMLParser xmlParser = new XMLParser();
+	    		String xml2 = xml.replaceAll("fileName='", "fileName='" + i);
+	    		Object o = xmlParser.parseFragment(xml2, true);
+				NS[i] = (NSThread) o;
 				runnable[i] = new CoreRunnable(NS[i]);
 			} catch (XMLParserException e) {
 				// TODO Auto-generated catch block
@@ -84,32 +87,32 @@ public class MultiThreadedNS extends NS {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-        
-        // carry on till all threads finished.
-        // threads are synchronised every time a particle was updated
-        // TODO: perhaps syncing is not necessary, making things more efficient?
-        int particlesFinished = 0;
-        while (particlesFinished < threadCount) {
-            countDown = new CountDownLatch(threadCount - particlesFinished);
-            for (int i = 0; i < threadCount; i++) {
-            	if (!NS[i].isFinished()) { 
-                	NS[i].countDown = countDown;
-            		NS[i].nsCountDown.countDown();
-            	}
-            }
-        	
-            try {
-    			countDown.await();
-    		} catch (InterruptedException e) {
-    			e.printStackTrace();
-    		}
-        	particlesFinished = 0;
-            for (int i = 0; i < threadCount; i++) {
-            	if (NS[i].isFinished()) { 
-            		particlesFinished++;
-            	}
-            }
-        }
+//        
+//        // carry on till all threads finished.
+//        // threads are synchronised every time a particle was updated
+//        // TODO: perhaps syncing is not necessary, making things more efficient?
+//        int particlesFinished = 0;
+//        while (particlesFinished < threadCount) {
+//            countDown = new CountDownLatch(threadCount - particlesFinished);
+//            for (int i = 0; i < threadCount; i++) {
+//            	if (!NS[i].isFinished()) { 
+//                	NS[i].countDown = countDown;
+//            		NS[i].nsCountDown.countDown();
+//            	}
+//            }
+//        	
+//            try {
+//    			countDown.await();
+//    		} catch (InterruptedException e) {
+//    			e.printStackTrace();
+//    		}
+//        	particlesFinished = 0;
+//            for (int i = 0; i < threadCount; i++) {
+//            	if (NS[i].isFinished()) { 
+//            		particlesFinished++;
+//            	}
+//            }
+//        }
     }
 	
 
