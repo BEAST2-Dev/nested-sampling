@@ -18,10 +18,13 @@ import beast.core.MCMC;
 import beast.core.NSLogger;
 import beast.core.Operator;
 import beast.core.State;
+import beast.core.StateNode;
 import beast.core.StateNodeInitialiser;
+import beast.core.parameter.Parameter;
 import beast.core.util.CompoundDistribution;
 import beast.core.util.Evaluator;
 import beast.core.util.Log;
+import beast.evolution.tree.Tree;
 import beast.util.NSLogAnalyser;
 import beast.util.Randomizer;
 
@@ -79,6 +82,10 @@ public class NS extends MCMC {
 	List<Double> likelihoods = new ArrayList<>();
 	boolean finished = false;
 
+	int paramCount = 0;
+	double paramCountFactor = 1.0;
+	boolean autoLoopLength = false;
+	
 	public NS() {}
 	
 	public NS(int chainLength, int preBurnin, int particleCount, int subChainLength, State state, List<Operator> operators, CompoundDistribution distribution, Double epsilon) {
@@ -155,6 +162,19 @@ public class NS extends MCMC {
 		H = 0;
 		
 		NSloggers = new ArrayList<>();
+		
+		
+		paramCount = 0;
+		for (StateNode node : state.stateNodeInput.get()) {
+			if (node instanceof Parameter<?>) {
+				Parameter<?> param = (Parameter<?>) node;
+				paramCount += param.getDimension();
+			} else if (node instanceof Tree) {
+				Tree tree = (Tree) node;
+				paramCount += tree.getNodeCount() * 2;
+			}
+		}
+		Log.warning("Counting " + paramCount + " parameters");
 	}
 
 	@Override
@@ -512,8 +532,22 @@ public class NS extends MCMC {
 			oldLogPrior += d.getArrayValue();
 		}
 		
-		for (int j = 0; j < subChainLength; j++) {
-			composeProposal(j + subChainLength * sampleNr);
+		
+		if (autoLoopLength) {
+			int acceptCount = 0;
+			int j = 0;
+			while (acceptCount < paramCount * paramCountFactor) {
+				boolean accept = composeProposal(j + subChainLength * sampleNr);
+				if (accept) {
+					acceptCount++;
+				}
+				 j++;
+			}
+			//System.err.println(j);
+		} else {
+			for (int j = 0; j < subChainLength; j++) {
+				composeProposal(j + subChainLength * sampleNr);
+			}
 		}
 	}
 
@@ -546,7 +580,8 @@ public class NS extends MCMC {
 	 *            the current state
 	 * @return the selected {@link beast.core.Operator}
 	 */
-	protected Operator composeProposal(final int currState) {
+	protected boolean composeProposal(final int currState) {
+		boolean accept = false;
 		state.store(currState);
 
 		final Operator operator = operatorSchedule.selectOperator();
@@ -612,6 +647,7 @@ public class NS extends MCMC {
 				}
 				if (printDebugInfo)
 					System.err.print(" accept");
+				accept = true;
 			} else {
 				// reject
 				if (currState >= 0) {
@@ -637,6 +673,6 @@ public class NS extends MCMC {
 				System.err.print(" direct reject");
 		}
 		log(currState);
-		return operator;
+		return accept;
 	}
 }

@@ -46,7 +46,8 @@ public class MultiThreadedNS extends NS {
 	    String xml = xmlProducer.toRawXML(this);
 	    xml = "<beast version='2.4'>\n" +
 	    		xml.replaceAll("spec='" + this.getClass().getCanonicalName() + "'",
-	    		"spec='" + NSThread.class.getCanonicalName() + "'")
+	    		"spec='" + NSThread.class.getCanonicalName() + "'").
+	    		replaceAll("threads='" + threadCount+"'", "")
 	    	+ "\n</beast>";
 	    
 	    NS = new NSThread[threadCount];
