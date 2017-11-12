@@ -304,7 +304,7 @@ public class NS extends MCMC {
 			particleStates[i] = state.toXML(0);
 			particleLikelihoods[i] = likelihood.getArrayValue();
 		}
-		Log.warning("particles initialised");
+		Log.warning(particleCount + " particles initialised");
 	}
 
 	/**
