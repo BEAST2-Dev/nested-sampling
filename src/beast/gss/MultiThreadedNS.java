@@ -13,7 +13,7 @@ import org.xml.sax.SAXException;
 
 import beast.core.Description;
 import beast.core.Input;
-
+import beast.core.util.Log;
 import beast.util.XMLParser;
 import beast.util.XMLParserException;
 import beast.util.XMLProducer;
@@ -130,6 +130,8 @@ public class MultiThreadedNS extends NS {
             	NS.run();
             } catch (Exception e) {
                 e.printStackTrace();
+                Log.err("Something went wrong running thread: " + e.getMessage());
+                NS.countDown.countDown();
             }
         }
 
