@@ -104,21 +104,6 @@ public class NS extends MCMC {
 //		if (historyLengthInput.get() < 2) {
 //			throw new IllegalArgumentException("history must be 2 or larger");
 //		}
-		super.initAndValidate();
-
-		particleCount = particleCountInput.get();
-		if (particleCount <= 0) {
-			throw new IllegalArgumentException("particle count must be a positive number");
-		}
-
-		subChainLength = subChainLengthInput.get();
-		if (subChainLength <= 0) {
-			throw new IllegalArgumentException("sub chain length must be a positive number");
-		}
-
-		particleStates = new String[particleCount];
-		particleLikelihoods = new double[particleCount];
-
 		// grab priors
 		CompoundDistribution d = (CompoundDistribution) posteriorInput.get();
 		List<Distribution> list = d.pDistributions.get();
@@ -144,6 +129,14 @@ public class NS extends MCMC {
 		}
 
 		if (samplingDistributionInput.get() != null) {
+			// remove other priors
+			for (int i =  list.size() - 1; i >= 0; i--) {
+				final String distID = list.get(i).getID().toLowerCase();
+				if (!distID.startsWith("likelihood")) {
+					list.remove(i);
+				}
+			}
+			// set sampling distribution from Input
 			samplingDistribution = new Distribution[1];
 			samplingDistribution[0] = samplingDistributionInput.get();
 			boolean alreadyAdded = false;
@@ -157,7 +150,24 @@ public class NS extends MCMC {
 				d.pDistributions.setValue(samplingDistribution[0], d);
 			}
 		}
-		
+	
+		super.initAndValidate();
+
+		particleCount = particleCountInput.get();
+		if (particleCount <= 0) {
+			throw new IllegalArgumentException("particle count must be a positive number");
+		}
+
+		subChainLength = subChainLengthInput.get();
+		if (subChainLength <= 0) {
+			throw new IllegalArgumentException("sub chain length must be a positive number");
+		}
+
+		particleStates = new String[particleCount];
+		particleLikelihoods = new double[particleCount];
+
+
+	
 		Z = -Double.MAX_VALUE;
 		H = 0;
 		
