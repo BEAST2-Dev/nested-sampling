@@ -19,7 +19,6 @@ import beast.app.util.Utils;
 import beast.core.util.Log;
 import beast.evolution.tree.Tree;
 import beast.gss.NS;
-import beast.math.distributions.Beta;
 import beast.util.LogAnalyser;
 
 public class NSLogAnalyser extends LogAnalyser {
@@ -124,20 +123,20 @@ public class NSLogAnalyser extends LogAnalyser {
  		}
  		Log.warning("Marginal likelihood: " + Z);
  		
- 		double logX = 0.0;
-		double u = nextBeta(N, 1.0);
- 		double nextu = nextBeta(N, 1.0);;
- 		for (int i = 0; i < NSLikelihoods.length; i++) {
- 			double lw = logX + Math.log(1.0 - u * nextu) - Math.log(2.0);
- 			double L = lw  + NSLikelihoods[i];
- 			Z = NS.logPlus(Z, L);
- 			weights[i] = L;
- 			
- 			u = nextu;
- 			nextu = nextBeta(N, 1.0);
- 			logX += Math.log(u);
- 		}
- 		Log.warning("Marginal likelihood: " + Z);
+// 		double logX = 0.0;
+//		double u = nextBeta(N, 1.0);
+// 		double nextu = nextBeta(N, 1.0);;
+// 		for (int i = 0; i < NSLikelihoods.length; i++) {
+// 			double lw = logX + Math.log(1.0 - u * nextu) - Math.log(2.0);
+// 			double L = lw  + NSLikelihoods[i];
+// 			Z = NS.logPlus(Z, L);
+// 			weights[i] = L;
+// 			
+// 			u = nextu;
+// 			nextu = nextBeta(N, 1.0);
+// 			logX += Math.log(u);
+// 		}
+// 		Log.warning("Marginal likelihood: " + Z);
 
  		
  		
@@ -360,11 +359,12 @@ public class NSLogAnalyser extends LogAnalyser {
     }
 
 	
-    static void printUsageAndExi() {
-        	System.out.println("NSLogAnalyser [options] -N n1 ... n2 -log [file1] ... [filen]");
+    static void printUsageAndExit() {
+        	System.out.println("NSLogAnalyser [options] -N n1 ... n2 -log [file1] ... [filen] [-tree [tfile1] ... [tfilen]]");
         	System.out.println("-N space separated list of particle sizes in order of files provided\n"
         			+ "If only 1 argument is provided it is assumed to apply to all files\n"
         			+ "If no -N item is provided it is assumed N=1");
+        	System.out.println("-out [file] specify output log file to contain posterior sample");
             System.out.println("-quiet Quiet mode.  Avoid printing status updates to stderr.");
         	System.out.println("-help");
         	System.out.println("--help");
@@ -426,12 +426,12 @@ public class NSLogAnalyser extends LogAnalyser {
         		case "-h":
         		case "-help":
         		case "--help":
-        			printUsageAndExit();
+        			NSLogAnalyser.printUsageAndExit();
         			break;
         		default:
         			if (arg.startsWith("-")) {
         				Log.warning.println("unrecognised command " + arg);
-        				printUsageAndExit();
+        				NSLogAnalyser.printUsageAndExit();
         			}
         			files.add(arg);
         			i++;

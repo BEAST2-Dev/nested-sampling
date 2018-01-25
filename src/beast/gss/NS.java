@@ -67,7 +67,7 @@ public class NS extends MCMC {
 	protected double[] particleLikelihoods;
 	protected double minLikelihood;
 
-	protected Distribution likelihood;
+	protected Distribution likelihood, originalPrior = null;
 	protected Distribution[] samplingDistribution;
 
 	double newLogPrior, oldLogPrior;
@@ -130,12 +130,22 @@ public class NS extends MCMC {
 
 		if (samplingDistributionInput.get() != null) {
 			// remove other priors
+			List<Distribution> originalPriors = new ArrayList<>();
 			for (int i =  list.size() - 1; i >= 0; i--) {
 				final String distID = list.get(i).getID().toLowerCase();
 				if (!distID.startsWith("likelihood")) {
+					originalPriors.add(list.get(i));
 					list.remove(i);
 				}
 			}
+			if (originalPriors.size() == 1) {
+				originalPrior = originalPriors.get(0);
+			} else {
+				originalPrior = new CompoundDistribution();
+				originalPrior.initByName("distribution", originalPriors);
+			}
+			originalPrior.setID("originalPrior");
+			list.add(originalPrior);
 			// set sampling distribution from Input
 			samplingDistribution = new Distribution[1];
 			samplingDistribution[0] = samplingDistributionInput.get();
@@ -407,6 +417,11 @@ public class NS extends MCMC {
  		Log.info("SD: " + Math.sqrt(H/N));
  	}
 
+	/** The likelihoods List will be populated with minimum likelihoods for the set of particles 
+	 * corrected for when using a sampling distribution. 
+	 * @param likelihoods
+	 * @throws IOException
+	 */
 	protected void doInnerLoop(List<Double> likelihoods) throws IOException {
 		// run nested sampling
 		double N = particleCount;	
@@ -445,8 +460,6 @@ public class NS extends MCMC {
 			}
 
 
-			likelihoods.add(minLikelihood);
-
 			// Store Li + discarded points				
 			if (particleCount > 1) {
 				state.fromXML(particleStates[iMin]);
@@ -471,13 +484,17 @@ public class NS extends MCMC {
 
 				lw = logW - (sampleNr - 1.0) / N;
 				double Li = minLikelihood;
+				if (originalPrior != null) {
+					Li += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+				}
+				likelihoods.add(Li);
 				
 				double L = lw  + Li;
 				
 				Z = logPlus(Z, L);
 				H = Math.exp(L - Z) * Li - Z + Math.exp(Zb - Z)*(H + Zb);
 				Zb = Z;
-				if (sampleNr % 100 == 0) {
+				if (sampleNr % 1 == 0) {
 			 		Log.info("ML: " + Z + " Information: " + H);
 				}
 				mlHistory[sampleNr % HISTORY_LENGTH] = Z;
