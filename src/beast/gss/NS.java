@@ -1,5 +1,6 @@
 package beast.gss;
 
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -149,16 +150,11 @@ public class NS extends MCMC {
 			// set sampling distribution from Input
 			samplingDistribution = new Distribution[1];
 			samplingDistribution[0] = samplingDistributionInput.get();
-			boolean alreadyAdded = false;
-			for (Distribution d2 : d.pDistributions.get()) {
-				if (d2 == samplingDistribution[0]) {
-					alreadyAdded = true;
-					break;
-				}
+			// make sure samplingDistribution is calculated first
+			if (list.contains(samplingDistribution[0])) {
+				list.remove(samplingDistribution[0]);				
 			}
-			if (!alreadyAdded) {
-				d.pDistributions.setValue(samplingDistribution[0], d);
-			}
+			list.add(0, samplingDistribution[0]);
 		}
 	
 		super.initAndValidate();
@@ -612,7 +608,6 @@ public class NS extends MCMC {
 		state.store(currState);
 
 		final Operator operator = operatorSchedule.selectOperator();
-
 		if (printDebugInfo)
 			System.err.print("\n" + currState + " " + operator.getName() + ":");
 
