@@ -371,6 +371,9 @@ public class NS extends MCMC {
 
 			particleStates[iMin] = state.toXML(sampleNr);
 			particleLikelihoods[iMin] = likelihood.getArrayValue();
+			if (originalPrior != null) {
+				particleLikelihoods[iMin] += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+			}
 
 			callUserFunction(sampleNr);
 
