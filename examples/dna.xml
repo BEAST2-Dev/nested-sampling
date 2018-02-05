@@ -46,7 +46,7 @@ name="alignment">
 <!--
 <run id="mcmc" spec="MCMC" chainLength="1200">
 -->
-<run id="mcmc" spec="beast.gss.NS" chainLength="2500" preBurnin="56" particleCount="28">
+<run id="mcmc" spec="beast.gss.NS" chainLength="250000" preBurnin="0" particleCount="10" epsilon="1e-13">
     <state id="state" storeEvery="5000">
         <tree id="Tree.t:dna" name="stateNode">
             <taxonset id="TaxonSet.dna" spec="TaxonSet">

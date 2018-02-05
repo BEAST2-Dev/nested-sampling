@@ -319,6 +319,9 @@ public class NS extends MCMC {
 
 			particleStates[i] = state.toXML(0);
 			particleLikelihoods[i] = likelihood.getArrayValue();
+			if (originalPrior != null) {
+				particleLikelihoods[i] += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+			}
 		}
 		Log.warning(particleCount + " particles initialised");
 	}
@@ -480,9 +483,9 @@ public class NS extends MCMC {
 
 				lw = logW - (sampleNr - 1.0) / N;
 				double Li = minLikelihood;
-				if (originalPrior != null) {
-					Li += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
-				}
+//				if (originalPrior != null) {
+//					Li += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+//				}
 				likelihoods.add(Li);
 				
 				double L = lw  + Li;
@@ -496,7 +499,11 @@ public class NS extends MCMC {
 				mlHistory[sampleNr % HISTORY_LENGTH] = Z;
 			}
 			
-			updateParticleState(iMin, state.toXML(sampleNr), likelihood.getArrayValue());
+			double c = 0;
+			if (originalPrior != null) {
+				c = originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+			}
+			updateParticleState(iMin, state.toXML(sampleNr), likelihood.getArrayValue() + c);
 
 			callUserFunction(sampleNr);
 
@@ -655,11 +662,15 @@ public class NS extends MCMC {
 
 			logAlpha = newLogPrior - oldLogPrior + logHastingsRatio; // CHECK
 																		// HASTINGS
+			double c = 0;
+			if (originalPrior != null) {
+				c = originalPrior.getCurrentLogP() - newLogPrior; 
+			}
 			if (printDebugInfo)
 				System.err.print(logAlpha + " " + newLogPrior + " " + oldLogPrior);
 
 			if ((logAlpha >= 0 || Randomizer.nextDouble() < Math.exp(logAlpha))
-					&& likelihood.getArrayValue() > minLikelihood) {
+					&& likelihood.getArrayValue() + c > minLikelihood) {
 				// accept
 				oldLogPrior = newLogPrior;
 				state.acceptCalculationNodes();
