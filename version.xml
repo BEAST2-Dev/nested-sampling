@@ -1,9 +1,9 @@
-<addon name='NS' version='0.0.1'>
-	<depends on='beast2' atleast='2.4.6'/>
+<package name='NS' version='0.1.0'>
+	<depends on='beast2' atleast='2.5.0'/>
 	
-    <addonapp description="Nested Sampling Log Analyser"
+    <packageapp description="Nested Sampling Log Analyser"
               class="beast.util.NSLogAnalyser"
               args=""
             />
 
-</addon>
+</package>

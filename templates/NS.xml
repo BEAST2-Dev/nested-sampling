@@ -1,0 +1,116 @@
+<beast version='2.0'
+       namespace='beast.app.beauti:beast.core:beast.evolution.branchratemodel:beast.evolution.speciation:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.evolution.likelihood:beast.evolution:beast.math.distributions'
+	templateinfo='template for standard phylogenetic analysis,&lt;br> supporting tip-date analysis and calibrations'>
+
+	<mergewith point='substModelTemplates'>
+        <subtemplate id='Nested Sampling' class='beast.gss.NS' mainid='NS'
+	        suppressInputs="beast.gss.NS.operator,
+    			beast.gss.NS.operatorschedule,
+	    	    beast.gss.NS.state,
+	        	beast.gss.NS.distribution,
+	        	beast.gss.NS.samplingDistribution,
+	        	beast.gss.NS.stopFactor,
+	        	beast.gss.NS.preBurnin,
+	        	beast.gss.NS.init">
+<![CDATA[
+    <run spec="beast.gss.NS" id="NS" chainLength="20000" particleCount="1" epsilon="1e-10">
+
+        <state storeEvery='5000' id='state'>
+        </state>
+
+        <distribution spec="CompoundDistribution" id="posterior">
+            <distribution spec="CompoundDistribution" id="prior">
+            </distribution>
+            <distribution spec="CompoundDistribution" id="likelihood" useThreads="true">
+            </distribution>
+        </distribution>
+
+        <logger id='tracelog' spec="beast.core.Logger" logEvery="1000" fileName="beast.log" sort="smart" sanitiseHeaders='true'>
+	        <model idref='posterior'/>
+            <log idref="posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+        </logger>
+
+        <logger id='screenlog' logEvery="1000">
+            <log idref="posterior"/>
+      	    <ESS spec='ESS' name='log' arg="@posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+        </logger>
+    </run>
+]]>
+</subtemplate>
+
+
+        <subtemplate id='Path Sampling/Stepping Stone' class='beast.inference.PathSampler' mainid='PathSampler'>
+<![CDATA[
+<run id='PathSampler' spec='beast.inference.PathSampler' chainLength="1000000" alpha='0.3' rootdir='/tmp/step' burnInPercentage='50' preBurnin="50000" deleteOldLogs='true' nrOfSteps='100'>
+cd $(dir)
+java -cp $(java.class.path) beast.app.beastapp.BeastMain $(resume/overwrite) -java -seed $(seed) beast.xml
+
+    <mcmc spec="MCMC" id="mcmc" chainLength="1000000">
+
+        <state storeEvery='5000' id='state'>
+        </state>
+
+        <distribution spec="CompoundDistribution" id="posterior">
+            <distribution spec="CompoundDistribution" id="prior">
+            </distribution>
+            <distribution spec="CompoundDistribution" id="likelihood" useThreads="true">
+            </distribution>
+        </distribution>
+
+        <logger id='tracelog' spec="beast.gss.NSLogger" logEvery="1000" fileName="beast.log" sort="smart" sanitiseHeaders='true'>
+	        <model idref='posterior'/>
+            <log idref="posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+        </logger>
+
+        <logger id='screenlog' logEvery="1000">
+            <log idref="posterior"/>
+      	    <ESS spec='ESS' name='log' arg="@posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+        </logger>
+    </mcmc>
+
+</run>
+]]>
+</subtemplate>
+
+
+        <subtemplate id='MCMC' class='beast.core.MCMC' mainid='mcmc'>
+<![CDATA[
+    <run spec="MCMC" id="mcmc" chainLength="1000000">
+
+        <state storeEvery='5000' id='state'>
+        </state>
+
+        <distribution spec="CompoundDistribution" id="posterior">
+            <distribution spec="CompoundDistribution" id="prior">
+            </distribution>
+            <distribution spec="CompoundDistribution" id="likelihood" useThreads="true">
+            </distribution>
+        </distribution>
+
+        <logger id='tracelog' spec="beast.gss.NSLogger" logEvery="1000" fileName="beast.log" sort="smart" sanitiseHeaders='true'>
+	        <model idref='posterior'/>
+            <log idref="posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+        </logger>
+
+        <logger id='screenlog' logEvery="1000">
+            <log idref="posterior"/>
+      	    <ESS spec='ESS' name='log' arg="@posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+        </logger>
+    </run>
+]]>
+</subtemplate>
+</mergewith>
+</beast>
+
