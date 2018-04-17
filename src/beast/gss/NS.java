@@ -11,6 +11,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
+import beast.core.Citation;
 import beast.core.Description;
 import beast.core.Distribution;
 import beast.core.Input;
@@ -45,6 +46,7 @@ Start with  N points θ1,...,θN sampled from prior.
 */
 
 @Description("Nested sampling for phylogenetics")
+@Citation("Patricio Maturana, Brendon J. Brewer, Steffen Klaere, Remco Bouckaert. Model selection and parameter inference in phylogenetics using Nested Sampling. arXiv:1703.05471v3")
 public class NS extends MCMC {
 	final static int SAMPLE_COUNT = 100;
 	
