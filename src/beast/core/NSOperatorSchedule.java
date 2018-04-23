@@ -29,7 +29,10 @@ public class NSOperatorSchedule extends OperatorSchedule {
 	int prevAcceptedCount, prevStateNodeIndex;
 	
 	void initialise() {		
-		// collect stateNodes
+    	// never optimise for NS
+    	autoOptimise = false;
+
+    	// collect stateNodes
 		stateNodes = new ArrayList<>();		
         for (final Operator op : operators) {
         	List<StateNode> nodes = op.listStateNodes();
@@ -89,7 +92,7 @@ public class NSOperatorSchedule extends OperatorSchedule {
     	prevAcceptedCount = 0;
     	totalAccepted = 0;
     	consecutiveRejectCount = 0;
-	}
+    }
 
 	
     public Operator selectOperator() {
@@ -132,4 +135,7 @@ public class NSOperatorSchedule extends OperatorSchedule {
     public void showOperatorRates(PrintStream out) {
     	out.println("NSOperatorSchedule::showOperatorRates(); not implemented yet");
     }
+    
+    
+    
 }
