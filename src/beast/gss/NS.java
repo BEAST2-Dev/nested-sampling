@@ -18,6 +18,7 @@ import beast.core.Input;
 import beast.core.Logger;
 import beast.core.MCMC;
 import beast.core.NSLogger;
+import beast.core.NSOperatorSchedule;
 import beast.core.Operator;
 import beast.core.State;
 import beast.core.StateNode;
@@ -61,6 +62,10 @@ public class NS extends MCMC {
 	public Input<Double> epsilonInput = new Input<>("epsilon", "stopping criterion: smallest change in ML estimate to accept", 1e-6);
 	public Input<Double> stopFactorInput = new Input<>("stopFactor", "stopping criterion: use at least stopfactor * Information * particleCount steps", 2.0);
 
+	public Input<Boolean> autoSubChainLengthInput = new Input<>("autoSubChainLength", "automatically determines subchain length based on number of accepted steps (unless subChainLength * paramCount is reached)", false);
+	public Input<Double> paramCountFactorInput = new Input<>("paramCountFactor", "determines length of subchain as multiplier of accepted steps before returning divided by number of parameters in the analysis"
+			+ "ignored if autoSubChainLengt=false", 1.0);
+
 	private static final boolean printDebugInfo = false;
 
 	protected int particleCount;
@@ -87,7 +92,7 @@ public class NS extends MCMC {
 
 	int paramCount = 0;
 	double paramCountFactor = 1.0;
-	boolean autoLoopLength = false;
+	boolean autoSubChainLength = true;
 	
 	public NS() {}
 	
@@ -104,6 +109,9 @@ public class NS extends MCMC {
 	
 	@Override
 	public void initAndValidate() {
+		paramCountFactor = paramCountFactorInput.get();
+		autoSubChainLength = autoSubChainLengthInput.get();
+
 //		if (historyLengthInput.get() < 2) {
 //			throw new IllegalArgumentException("history must be 2 or larger");
 //		}
@@ -568,17 +576,17 @@ public class NS extends MCMC {
 		}
 		
 		
-		if (autoLoopLength) {
+		if (autoSubChainLength) {
 			int acceptCount = 0;
 			int j = 0;
-			while (acceptCount < paramCount * paramCountFactor) {
+			while (acceptCount < paramCount * paramCountFactor && j < paramCount * subChainLength) {
 				boolean accept = composeProposal(j + subChainLength * sampleNr);
 				if (accept) {
 					acceptCount++;
 				}
-				 j++;
+				j++;
 			}
-			//System.err.println(j);
+			System.err.println("autoSubChainLength = " + j);
 		} else {
 			for (int j = 0; j < subChainLength; j++) {
 				composeProposal(j + subChainLength * sampleNr);
