@@ -18,7 +18,6 @@ import beast.core.Input;
 import beast.core.Logger;
 import beast.core.MCMC;
 import beast.core.NSLogger;
-import beast.core.NSOperatorSchedule;
 import beast.core.Operator;
 import beast.core.State;
 import beast.core.StateNode;
@@ -63,7 +62,7 @@ public class NS extends MCMC {
 	public Input<Double> epsilonInput = new Input<>("epsilon", "stopping criterion: smallest change in ML estimate to accept", 1e-6);
 	public Input<Double> stopFactorInput = new Input<>("stopFactor", "stopping criterion: use at least stopfactor * Information * particleCount steps", 2.0);
 
-	public Input<Boolean> autoSubChainLengthInput = new Input<>("autoSubChainLength", "automatically determines subchain length based on number of accepted steps (unless subChainLength * paramCount is reached)", false);
+	public Input<Boolean> autoSubChainLengthInput = new Input<>("autoSubChainLength", "automatically determines subchain length based on number of accepted steps (unless subChainLength * paramCount is reached)", true);
 	public Input<Double> paramCountFactorInput = new Input<>("paramCountFactor", "determines length of subchain as multiplier of accepted steps before returning divided by number of parameters in the analysis"
 			+ "ignored if autoSubChainLengt=false", 1.0);
 
@@ -301,6 +300,8 @@ public class NS extends MCMC {
 					NSloggers.add(nslogger);
 					loggers.remove(i);
 				}
+			} else {
+				logger.initByName("logEvery", 1);
 			}
 		}
 
@@ -542,6 +543,8 @@ public class NS extends MCMC {
 					((NSLogger) logger).log(sampleNr, minLikelihood);
 				}
 			}
+			log(sampleNr);
+
 			// mean(theta) = \sum_i theta * Li*wi/Z
 			// Z = \sum_i Li*wi
 			
@@ -778,7 +781,6 @@ public class NS extends MCMC {
 			if (printDebugInfo)
 				System.err.print(" direct reject");
 		}
-		log(currState);
 		return accept;
 	}
 }

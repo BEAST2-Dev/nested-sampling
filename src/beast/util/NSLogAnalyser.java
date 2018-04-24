@@ -112,15 +112,25 @@ public class NSLogAnalyser extends LogAnalyser {
 // 		Log.warning("Marginal likelihood: " + Z);
 
 
- 		double logX = 0.0;
- 		for (int i = 0; i < NSLikelihoods.length; i++) {
- 			double u = nextBeta(N, 1.0); 			
- 			double lw = logX + Math.log(1.0 - u);
- 			double L = lw  + NSLikelihoods[i];
- 			Z = NS.logPlus(Z, L);
- 			weights[i] = L; 			
- 			logX += Math.log(u);
+ 		double zMean = 0;
+ 		final double RESAMPLE_COUNT = 100;
+ 		for (int k = 0; k < RESAMPLE_COUNT; k++) {
+ 	 		double logX = 0.0;
+	 		Z = -Double.MAX_VALUE;
+	 		for (int i = 0; i < NSLikelihoods.length; i++) {
+	 			double u = nextBeta(N, 1.0); 			
+	 			double lw = logX + Math.log(1.0 - u);
+	 			double L = lw  + NSLikelihoods[i];
+	 			Z = NS.logPlus(Z, L);
+	 			weights[i] += L; 			
+	 			logX += Math.log(u);
+	 		}
+	 		zMean += Z;
  		}
+ 		for (int i = 0; i < NSLikelihoods.length; i++) {
+ 			weights[i] /= RESAMPLE_COUNT;
+ 		}
+ 		Z = zMean / RESAMPLE_COUNT;
  		Log.warning("\nMarginal likelihood: " + Z);
  		
 // 		double logX = 0.0;

@@ -16,6 +16,11 @@ import beast.util.Randomizer;
 public class NSOperatorSchedule extends OperatorSchedule {
 	public Input<Boolean> cycleInput = new Input<>("cycle", "adapt operator weights to cycle over all state nodes till every one is changed", true);
 	
+	public NSOperatorSchedule() {
+		// set default autoOptimise to false
+		autoOptimiseInput.setValue(false, this);
+	}
+	
 	List<StateNode> stateNodes;
 	double [] stateNodeWeights;
 	double [] stateNodeDimensions;
@@ -31,6 +36,7 @@ public class NSOperatorSchedule extends OperatorSchedule {
 	void initialise() {		
     	// never optimise for NS
     	autoOptimise = autoOptimiseInput.get();
+    	Log.warning("autoOptimise = " + autoOptimise);
 
     	// collect stateNodes
 		stateNodes = new ArrayList<>();		
@@ -75,13 +81,28 @@ public class NSOperatorSchedule extends OperatorSchedule {
         	}
         }
         
+        // determine total sum of dimensions of parameters operators operate on
+        int [] operatorDimensions = new int[operators.size()];
+        for (int i = 0; i < operators.size(); i++) {
+        	for (StateNode sn : operators.get(i).listStateNodes()) {
+            	if (sn instanceof Parameter) {
+            		operatorDimensions[i] += ((Parameter) sn).getDimension();
+            	} else {
+            		operatorDimensions[i] += 2 * ((TreeInterface) sn).getNodeCount();
+            	}        		 
+        	}
+        }
+        
         // initialise operatorsWeights
         operatorWeights = new double[stateNodes.size()][];
         for (int i = 0; i < stateNodes.size(); i++) {
-        	List<Operator> operators = stateNodeOperators[i];
-        	operatorWeights[i] = new double[operators.size()];
-        	for (int j = 0; j < operators.size(); j++) {
-        		operatorWeights[i][j] = operators.get(j).getWeight();
+        	List<Operator> sOperators = stateNodeOperators[i];
+        	operatorWeights[i] = new double[sOperators.size()];
+        	double dim = stateNodeDimensions[i];
+        	for (int j = 0; j < sOperators.size(); j++) {
+        		Operator operator = sOperators.get(j);
+        		int k = operators.indexOf(operator);
+        		operatorWeights[i][j] = operator.getWeight() * dim / operatorDimensions[k];
         	}
         	operatorWeights[i] = Randomizer.getNormalized(operatorWeights[i]);
         	for (int j = 1; j < operatorWeights[i].length; j++) {
