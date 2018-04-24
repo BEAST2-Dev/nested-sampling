@@ -38,6 +38,8 @@
         <fileset dir="${libBeast2}" includes="commons-math3-3.1.1.jar"/>
         <fileset dir="${libBeast2}" includes="colt.jar"/>
         <fileset dir="${libBeast2}" includes="debug-1.0.jar"/>
+        <pathelement path="${buildMODEL_SELECTION}"/>
+        <pathelement path="${buildBEAST_LABS}"/>
         <pathelement path="${beast2classpath}"/>
 	</path>
 

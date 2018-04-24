@@ -28,6 +28,7 @@ import beast.core.util.CompoundDistribution;
 import beast.core.util.Evaluator;
 import beast.core.util.Log;
 import beast.evolution.tree.Tree;
+import beast.evolution.tree.TreeInterface;
 import beast.util.NSLogAnalyser;
 import beast.util.Randomizer;
 
@@ -284,19 +285,33 @@ public class NS extends MCMC {
 			}
 		}
 
-		// initialises log so that log file headers are written, etc.
-		for (final Logger log : loggers) {
-			log.init();
-		}
-		
-		// split off NSloggers
+		// replace trace loggers to file with NSloggers
 		for (int i = loggers.size() - 1; i >= 0; i--) {
 			Logger logger = loggers.get(i);
 			if (logger instanceof NSLogger) {
 				NSloggers.add((NSLogger) logger);
 				loggers.remove(i);
+			} else if (logger.mode == Logger.LOGMODE.compound && logger.fileNameInput.get() != null) {
+				NSLogger nslogger = replaceLogger(logger);
+				NSloggers.add(nslogger);
+				loggers.remove(i);
+			} else if (logger.mode == Logger.LOGMODE.autodetect && logger.fileNameInput.get() != null) {
+				if (!(logger.loggersInput.get().size() == 1 && logger.loggersInput.get().get(0) instanceof TreeInterface)) {
+					NSLogger nslogger = replaceLogger(logger);
+					NSloggers.add(nslogger);
+					loggers.remove(i);
+				}
 			}
 		}
+
+		// initialises log so that log file headers are written, etc.
+		for (final Logger log : loggers) {
+			log.init();
+		}
+		for (final Logger log : NSloggers) {
+			log.init();
+		}
+
 		if (NSloggers.size() == 0) {
 			Log.warning("");
 			Log.warning("WARNING: no NSLoggers found -- no posterior sample will be generated");
@@ -318,7 +333,52 @@ public class NS extends MCMC {
 		state.storeToFile(chainLength);
 		operatorSchedule.storeToFile();
 		// Randomizer.storeToFile(stateFileName);
+		
+		for (final Logger log : loggers) {
+			log.close();
+		}
+		for (final Logger log : NSloggers) {
+			log.close();
+		}
+
+		// produce posterior samples
+		Log.warning("Producing posterior samples");
+		NSLogger nslogger0 = NSloggers.get(0);
+		for (Logger logger : loggers) {
+			if (logger.mode == Logger.LOGMODE.tree ||
+				logger.mode == Logger.LOGMODE.autodetect && logger.fileNameInput.get() != null &&
+				logger.loggersInput.get().get(0) instanceof TreeInterface) {
+				
+				NSLogAnalyser.main(new String[]{"-log", nslogger0.fileNameInput.get(),
+						"-tree", logger.fileNameInput.get(),
+						"-out", logger.fileNameInput.get() + ".posterior",
+						"-N", particleCount+"",
+						"-quiet"});
+			}
+		}
+		for (NSLogger nslogger : NSloggers) {
+			NSLogAnalyser.main(new String[]{"-log", nslogger.fileNameInput.get(),
+					"-out", nslogger.fileNameInput.get() + ".posterior",
+					"-N", particleCount+"",
+					"-quiet"});
+		}
+		
+
 	} // run;
+
+	private NSLogger replaceLogger(Logger logger) {
+		Log.warning("replacing logger " + logger.getID() + " with NSLogger");
+		NSLogger nslogger = new NSLogger();
+		nslogger.initByName("logEvery", logger.everyInput.get(),
+				"fileName", logger.fileNameInput.get(),
+				"model", logger.modelInput.get(),
+				"sort", logger.sortModeInput.get(),
+				"sanitiseHeaders", logger.sanitiseHeadersInput.get(),
+				"log", logger.loggersInput.get()
+				);
+		nslogger.setID(logger.getID());
+		return nslogger;
+	}
 
 	protected void initParticles() {
 		minLikelihood = Double.NEGATIVE_INFINITY;

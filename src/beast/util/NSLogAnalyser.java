@@ -103,13 +103,13 @@ public class NSLogAnalyser extends LogAnalyser {
  		
  		double logW = Math.log(1.0 - Math.exp(-1.0/N));
 		//double logW = Math.log(1.0 - Math.exp(-2.0/N)) - Math.log(2.0) ;
- 		for (int i = 0; i < NSLikelihoods.length; i++) {
- 			double lw = logW - (i - 1.0) / N;
- 			double L = lw  + NSLikelihoods[i];
- 			Z = NS.logPlus(Z, L);
- 			weights[i] = L;
- 		}
- 		Log.warning("Marginal likelihood: " + Z);
+// 		for (int i = 0; i < NSLikelihoods.length; i++) {
+// 			double lw = logW - (i - 1.0) / N;
+// 			double L = lw  + NSLikelihoods[i];
+// 			Z = NS.logPlus(Z, L);
+// 			weights[i] = L;
+// 		}
+// 		Log.warning("Marginal likelihood: " + Z);
 
 
  		double logX = 0.0;
@@ -121,7 +121,7 @@ public class NSLogAnalyser extends LogAnalyser {
  			weights[i] = L; 			
  			logX += Math.log(u);
  		}
- 		Log.warning("Marginal likelihood: " + Z);
+ 		Log.warning("\nMarginal likelihood: " + Z);
  		
 // 		double logX = 0.0;
 //		double u = nextBeta(N, 1.0);
@@ -246,6 +246,7 @@ public class NSLogAnalyser extends LogAnalyser {
         
         if (outFile != null) {
         	try {
+        		Log.warning("\n");
 				resampleToFile();
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -447,7 +448,9 @@ public class NSLogAnalyser extends LogAnalyser {
                 }
                 analyser = new NSLogAnalyser(file.getAbsolutePath(), burninPercentage, quiet, 1);
                 analyser.calcStats();
-                analyser.print(System.out);
+                if (!quiet) {
+                	analyser.print(System.out);
+                }
         	} else {
         		// process files
         		if (N.size() == 0) {
@@ -465,8 +468,9 @@ public class NSLogAnalyser extends LogAnalyser {
         		}
         		analyser.setOutFile(outFile);
                 analyser.calcStats();
-                analyser.print(System.out);
-                
+                if (!quiet) {
+                	analyser.print(System.out);
+                }                
         	}
     } catch (Exception e) {
         e.printStackTrace();
