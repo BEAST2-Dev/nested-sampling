@@ -1,6 +1,7 @@
 package beast.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import beast.core.Description;
@@ -14,7 +15,8 @@ import beast.util.Randomizer;
 
 @Description("Operator scedule tuned for NS")
 public class NSOperatorSchedule extends OperatorSchedule {
-	public Input<Boolean> cycleInput = new Input<>("cycle", "adapt operator weights to cycle over all state nodes till every one is changed", true);
+	enum WeightSchedule {STATIC, CYCLIC, AUTO};
+	public Input<WeightSchedule> cycleInput = new Input<>("weightSchedule", "adapt operator weights to cycle over all state nodes till every one is changed", WeightSchedule.AUTO, WeightSchedule.values());
 	
 	public NSOperatorSchedule() {
 		// set default autoOptimise to false
@@ -23,6 +25,7 @@ public class NSOperatorSchedule extends OperatorSchedule {
 	
 	List<StateNode> stateNodes;
 	double [] stateNodeWeights;
+	double [] stateNodeAcceptCounts;
 	double [] stateNodeDimensions;
 	double totalDimension;
 	double totalAccepted;
@@ -33,7 +36,15 @@ public class NSOperatorSchedule extends OperatorSchedule {
 	Operator prevOperator = null;
 	int prevAcceptedCount, prevStateNodeIndex;
 	
-	void initialise() {		
+	WeightSchedule weightSchedule;
+	
+	void initialise() {
+		// the following triggers the private reweightOperators, which sets up the operators
+		super.selectOperator();
+//		showOperatorRates(System.out);
+		weightSchedule = cycleInput.get();
+		Log.warning("weight schedule = " + weightSchedule);
+		
     	// never optimise for NS
     	autoOptimise = autoOptimiseInput.get();
     	Log.warning("autoOptimise = " + autoOptimise);
@@ -62,6 +73,8 @@ public class NSOperatorSchedule extends OperatorSchedule {
         	totalDimension += stateNodeDimensions[i];
         }
         
+        stateNodeAcceptCounts = new double[stateNodes.size()];
+        Arrays.fill(stateNodeAcceptCounts, 1.0);
         Log.warning("#parameters = " + totalDimension);
         
         // initialise stateNodeWeights
@@ -120,7 +133,10 @@ public class NSOperatorSchedule extends OperatorSchedule {
         		normalizedWeights[k] += stateNodeDimensions[i] * w;
         	}
         }
+//        System.out.println(Arrays.toString(normalizedWeights));
         normalizedWeights = Randomizer.getNormalized(normalizedWeights);
+//        System.out.println(Arrays.toString(normalizedWeights));
+        
         
         // calculate cumulative operator probs
         cumulativeProbs = new double[normalizedWeights.length];
@@ -128,11 +144,15 @@ public class NSOperatorSchedule extends OperatorSchedule {
         for (int i = 1; i < normalizedWeights.length; i++) {
         	cumulativeProbs[i] = cumulativeProbs[i-1] + normalizedWeights[i];
         }
+//        System.out.println(Arrays.toString(cumulativeProbs));
 
         prevOperator = null;
     	prevAcceptedCount = 0;
     	totalAccepted = 0;
     	consecutiveRejectCount = 0;
+
+//    	showOperatorRates(System.out);
+    	
     }
 
 	
@@ -141,41 +161,69 @@ public class NSOperatorSchedule extends OperatorSchedule {
     		initialise();
     	}
     	
-    	
-    	if (cycleInput.get()) {
-	    	if (prevOperator != null) {
-	    		if (prevAcceptedCount != prevOperator.m_nNrAccepted) {
-	    			// the prevOperator was accepted, so remove 1 from stateNodeWeights
-	    			stateNodeWeights[prevStateNodeIndex]--;
-	    			totalAccepted++;
-	    			if (totalAccepted == totalDimension) {
-	    				// reset
-	    				totalAccepted = 0;
-	        			consecutiveRejectCount = 0;
-	    		        System.arraycopy(stateNodeDimensions, 0, stateNodeWeights, 0, stateNodeWeights.length);
-	    			}
-	    		} else {
-	    			consecutiveRejectCount++;
-	    			if (consecutiveRejectCount > totalDimension) {
-	    				// reset
-	    				totalAccepted = 0;
-	        			consecutiveRejectCount = 0;
-	    		        System.arraycopy(stateNodeDimensions, 0, stateNodeWeights, 0, stateNodeWeights.length);
-	    			}
-	    		}
+    	switch (weightSchedule) {
+    	case CYCLIC :
+	    	{
+		    	if (prevOperator != null) {
+		    		if (prevAcceptedCount != prevOperator.m_nNrAccepted) {
+		    			// the prevOperator was accepted, so remove 1 from stateNodeWeights
+		    			stateNodeWeights[prevStateNodeIndex]--;
+		    			totalAccepted++;
+		    			if (totalAccepted == totalDimension) {
+		    				// reset
+		    				totalAccepted = 0;
+		        			consecutiveRejectCount = 0;
+		    		        System.arraycopy(stateNodeDimensions, 0, stateNodeWeights, 0, stateNodeWeights.length);
+		    			}
+		    		} else {
+		    			consecutiveRejectCount++;
+		    			if (consecutiveRejectCount > totalDimension) {
+		    				// reset
+		    				totalAccepted = 0;
+		        			consecutiveRejectCount = 0;
+		    		        System.arraycopy(stateNodeDimensions, 0, stateNodeWeights, 0, stateNodeWeights.length);
+		    			}
+		    		}
+		    	}
+		    	
+		        final int stateNodeIndex = Randomizer.randomChoicePDF(stateNodeWeights);
+		        double [] ow = operatorWeights[stateNodeIndex];
+		        final int operatorIndex = ow.length == 1 ? 0 : Randomizer.randomChoice(ow);
+		        prevOperator = stateNodeOperators[stateNodeIndex].get(operatorIndex);
+		        prevAcceptedCount = prevOperator.m_nNrAccepted;
+		        prevStateNodeIndex = stateNodeIndex;
+		        return prevOperator;
 	    	}
-	    	
-	        final int stateNodeIndex = Randomizer.randomChoicePDF(stateNodeWeights);
-	        double [] ow = operatorWeights[stateNodeIndex];
-	        final int operatorIndex = ow.length == 1 ? 0 : Randomizer.randomChoice(ow);
-	        prevOperator = stateNodeOperators[stateNodeIndex].get(operatorIndex);
-	        prevAcceptedCount = prevOperator.m_nNrAccepted;
-	        prevStateNodeIndex = stateNodeIndex;
-	        return prevOperator;
-    	} else {
-    		// don't cycle, just pick an operator with static weigth distribution
-            final int operatorIndex = Randomizer.randomChoicePDF(cumulativeProbs);
-            return operators.get(operatorIndex);
+	    	case AUTO:
+	    	{
+		    	if (prevOperator != null) {
+		    		if (prevAcceptedCount != prevOperator.m_nNrAccepted) {
+		    			// the prevOperator was accepted, so add 1 from stateNodeAcceptCounts
+		    			stateNodeAcceptCounts[prevStateNodeIndex]++;
+		    		}
+		    	}
+		    	
+		    	double [] weights = new double[stateNodeWeights.length];
+		    	for (int i = 0; i < weights.length; i++) {
+		    		weights[i] = stateNodeWeights[i] / stateNodeAcceptCounts[i];
+		    	}
+		    	
+		        final int stateNodeIndex = Randomizer.randomChoicePDF(weights);
+		        double [] ow = operatorWeights[stateNodeIndex];
+		        final int operatorIndex = ow.length == 1 ? 0 : Randomizer.randomChoice(ow);
+		        prevOperator = stateNodeOperators[stateNodeIndex].get(operatorIndex);
+		        prevAcceptedCount = prevOperator.m_nNrAccepted;
+		        prevStateNodeIndex = stateNodeIndex;
+		        return prevOperator;
+	    	}
+
+    	case STATIC:
+    	default:
+    		// don't cycle, just pick an operator with static weight distribution
+    		{
+    			final int operatorIndex = Randomizer.randomChoice(cumulativeProbs);
+    			return operators.get(operatorIndex);
+    		}
     	}
     }
     
