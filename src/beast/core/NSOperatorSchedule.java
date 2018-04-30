@@ -5,22 +5,35 @@ import java.util.Arrays;
 import java.util.List;
 
 import beast.core.Description;
+import beast.core.Input.Validate;
 import beast.core.Operator;
 import beast.core.OperatorSchedule;
 import beast.core.StateNode;
 import beast.core.parameter.Parameter;
 import beast.core.util.Log;
+import beast.evolution.operators.TipDatesRandomWalker;
+import beast.evolution.operators.TipDatesScaler;
 import beast.evolution.tree.TreeInterface;
 import beast.util.Randomizer;
 
-@Description("Operator scedule tuned for NS")
+@Description("Operator scedule that automatically determines operator weights")
 public class NSOperatorSchedule extends OperatorSchedule {
 	enum WeightSchedule {STATIC, CYCLIC, AUTO};
-	public Input<WeightSchedule> cycleInput = new Input<>("weightSchedule", "adapt operator weights to cycle over all state nodes till every one is changed", WeightSchedule.AUTO, WeightSchedule.values());
+	public Input<WeightSchedule> weighteScheduleInput = new Input<>("weightSchedule", "adapt operator weights to cycle over all state nodes till every one is changed", WeightSchedule.AUTO, WeightSchedule.values());
+	
+	enum TreeWeightSchedule {x1, x1_5, x1_5_plus, x2};
+	public Input<TreeWeightSchedule> treeWeightScheduleInput = new Input<>("treeWeightSchedule", "determine weight factor for nodes in the tree", TreeWeightSchedule.x1_5_plus, TreeWeightSchedule.values());
+	
+	public Input<Integer> cycleRefreshThresholdInput = new Input<>("cycleRefreshThreshold", "number of dimensions below which the cyclic weight schedule resets", 0);
+	public Input<String> weightInput = new Input<>("weights", "space separated list of doubles. If specified will be used as state node dimensions");
+	
 	
 	public NSOperatorSchedule() {
 		// set default autoOptimise to false
-		autoOptimiseInput.setValue(false, this);
+		autoOptimiseInput.setValue(null, this);
+		autoOptimiseInput.setRule(Validate.REQUIRED);
+		weighteScheduleInput.setValue(null, this);
+		weighteScheduleInput.setRule(Validate.REQUIRED);
 	}
 	
 	List<StateNode> stateNodes;
@@ -37,12 +50,14 @@ public class NSOperatorSchedule extends OperatorSchedule {
 	int prevAcceptedCount, prevStateNodeIndex;
 	
 	WeightSchedule weightSchedule;
+	int cycleRefreshThreshold;
 	
 	void initialise() {
 		// the following triggers the private reweightOperators, which sets up the operators
 		super.selectOperator();
 //		showOperatorRates(System.out);
-		weightSchedule = cycleInput.get();
+		weightSchedule = weighteScheduleInput.get();
+		cycleRefreshThreshold = cycleRefreshThresholdInput.get();
 		Log.warning("weight schedule = " + weightSchedule);
 		
     	// never optimise for NS
@@ -62,16 +77,53 @@ public class NSOperatorSchedule extends OperatorSchedule {
         
         // initialise dimensions
         stateNodeDimensions = new double[stateNodes.size()];
-        totalDimension = 0;
-        for (int i = 0; i < stateNodeDimensions.length; i++) {
-        	StateNode sn = stateNodes.get(i);
-        	if (sn instanceof Parameter) {
-        		stateNodeDimensions[i] = ((Parameter) sn).getDimension();
-        	} else {
-        		stateNodeDimensions[i] = 2 * ((TreeInterface) sn).getNodeCount();
+        if (weightInput.get() != null) {
+        	String [] strs = weightInput.get().trim().split("\\s+");
+        	if (strs.length != stateNodes.size()) {
+        		throw new IllegalArgumentException("expected " + stateNodes.size() + " weights, but got " + strs.length);
         	}
-        	totalDimension += stateNodeDimensions[i];
+            totalDimension = 0;
+        	for (int i = 0; i < strs.length; i++) {
+        		stateNodeDimensions[i] = Double.parseDouble(strs[i]);
+        		Log.warning(stateNodes.get(i).getID() + ": " + stateNodeDimensions[i]);
+            	totalDimension += stateNodeDimensions[i];
+        	}
+        } else {
+            totalDimension = 0;
+            for (int i = 0; i < stateNodeDimensions.length; i++) {
+            	StateNode sn = stateNodes.get(i);
+            	if (sn instanceof Parameter) {
+            		stateNodeDimensions[i] = ((Parameter) sn).getDimension();
+            	} else {
+            		switch (treeWeightScheduleInput.get()) {
+            		case x1:
+                		stateNodeDimensions[i] = 1 * ((TreeInterface) sn).getNodeCount();
+            			break;
+            		case x1_5:
+                		stateNodeDimensions[i] = 1.5 * ((TreeInterface) sn).getNodeCount();
+            			break;
+            		case x1_5_plus:
+                		stateNodeDimensions[i] = 1.5 * ((TreeInterface) sn).getNodeCount();
+                		for (BEASTInterface o : ((BEASTInterface)sn).getOutputs()) {
+                			if (o instanceof TipDatesRandomWalker) {
+                				TipDatesRandomWalker op = (TipDatesRandomWalker) o;
+                				stateNodeDimensions[i] += op.m_taxonsetInput.get().getTaxonCount();
+                			} else if (o instanceof TipDatesScaler) {
+                				TipDatesScaler op = (TipDatesScaler) o;
+                				stateNodeDimensions[i] += op.taxonsetInput.get().getTaxonCount();
+                				
+                			}
+                		}
+            			break;
+            		case x2:
+                		stateNodeDimensions[i] = 2 * ((TreeInterface) sn).getNodeCount();
+            			break;
+            		}
+            	}
+            	totalDimension += stateNodeDimensions[i];
+            }
         }
+        
         
         stateNodeAcceptCounts = new double[stateNodes.size()];
         Arrays.fill(stateNodeAcceptCounts, 1.0);
@@ -169,7 +221,7 @@ public class NSOperatorSchedule extends OperatorSchedule {
 		    			// the prevOperator was accepted, so remove 1 from stateNodeWeights
 		    			stateNodeWeights[prevStateNodeIndex]--;
 		    			totalAccepted++;
-		    			if (totalAccepted == totalDimension) {
+		    			if (totalAccepted >= totalDimension - cycleRefreshThreshold) {
 		    				// reset
 		    				totalAccepted = 0;
 		        			consecutiveRejectCount = 0;
