@@ -113,9 +113,13 @@ public class NSLogAnalyser extends LogAnalyser {
 
 
  		double zMean = 0;
- 		final double RESAMPLE_COUNT = 100;
+ 		double v = 0;
+ 		double hMean = 0, H = 0;
+ 		final double RESAMPLE_COUNT = 1000;
  		for (int k = 0; k < RESAMPLE_COUNT; k++) {
  	 		double logX = 0.0;
+ 	 		H = 0;
+ 	 		double Zb = -Double.MAX_VALUE;
 	 		Z = -Double.MAX_VALUE;
 	 		for (int i = 0; i < NSLikelihoods.length; i++) {
 	 			double u = nextBeta(N, 1.0); 			
@@ -124,14 +128,25 @@ public class NSLogAnalyser extends LogAnalyser {
 	 			Z = NS.logPlus(Z, L);
 	 			weights[i] += L; 			
 	 			logX += Math.log(u);
+	 			if (i > 0) {
+	 				double Li = NSLikelihoods[i-1];
+	 				H = Math.exp(L - Z) * Li - Z + Math.exp(Zb - Z)*(H + Zb);
+	 				// Log.info("Math.exp("+L+" - "+Z+") * "+Li+ " -"+ Z +"+ Math.exp("+Zb+"- "+ Z+")*("+H+" + "+Zb+")");
+	 				Zb = Z;
+	 			}
 	 		}
 	 		zMean += Z;
+ 			v += Z * Z;
+	 		hMean += H;
  		}
  		for (int i = 0; i < NSLikelihoods.length; i++) {
  			weights[i] /= RESAMPLE_COUNT;
  		}
+ 		
  		Z = zMean / RESAMPLE_COUNT;
- 		Log.warning("\nMarginal likelihood: " + Z);
+ 		v = Math.sqrt(v/RESAMPLE_COUNT-Z*Z);
+ 		H = hMean / RESAMPLE_COUNT;
+ 		Log.warning("\nMarginal likelihood: " + Z + " swrt(H/N)=(" + Math.sqrt(H / N) + ")=?=SD=(" + v + ") Information: " + H);
  		
 // 		double logX = 0.0;
 //		double u = nextBeta(N, 1.0);
@@ -264,6 +279,7 @@ public class NSLogAnalyser extends LogAnalyser {
         }
         
     } // calcStats
+
 
 	private void resampleToFile() throws IOException {
 		PrintStream out = new PrintStream(new File(outFile));
