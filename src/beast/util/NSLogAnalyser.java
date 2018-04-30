@@ -146,7 +146,7 @@ public class NSLogAnalyser extends LogAnalyser {
  		Z = zMean / RESAMPLE_COUNT;
  		v = Math.sqrt(v/RESAMPLE_COUNT-Z*Z);
  		H = hMean / RESAMPLE_COUNT;
- 		Log.warning("\nMarginal likelihood: " + Z + " swrt(H/N)=(" + Math.sqrt(H / N) + ")=?=SD=(" + v + ") Information: " + H);
+ 		Log.warning("\nMarginal likelihood: " + Z + " sqrt(H/N)=(" + Math.sqrt(H / N) + ")=?=SD=(" + v + ") Information: " + H);
  		
 // 		double logX = 0.0;
 //		double u = nextBeta(N, 1.0);

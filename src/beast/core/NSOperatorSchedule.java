@@ -19,7 +19,7 @@ import beast.util.Randomizer;
 @Description("Operator scedule that automatically determines operator weights")
 public class NSOperatorSchedule extends OperatorSchedule {
 	enum WeightSchedule {STATIC, CYCLIC, AUTO};
-	public Input<WeightSchedule> weighteScheduleInput = new Input<>("weightSchedule", "adapt operator weights to cycle over all state nodes till every one is changed", WeightSchedule.AUTO, WeightSchedule.values());
+	public Input<WeightSchedule> weighteScheduleInput = new Input<>("weightSchedule", "adapt operator weights to cycle over all state nodes till every one is changed", null, WeightSchedule.values());
 	
 	enum TreeWeightSchedule {x1, x1_5, x1_5_plus, x2};
 	public Input<TreeWeightSchedule> treeWeightScheduleInput = new Input<>("treeWeightSchedule", "determine weight factor for nodes in the tree", TreeWeightSchedule.x1_5_plus, TreeWeightSchedule.values());
@@ -30,7 +30,7 @@ public class NSOperatorSchedule extends OperatorSchedule {
 	
 	public NSOperatorSchedule() {
 		// set default autoOptimise to false
-		autoOptimiseInput.setValue(null, this);
+		autoOptimiseInput.setValue(false, this);
 		autoOptimiseInput.setRule(Validate.REQUIRED);
 		weighteScheduleInput.setValue(null, this);
 		weighteScheduleInput.setRule(Validate.REQUIRED);
