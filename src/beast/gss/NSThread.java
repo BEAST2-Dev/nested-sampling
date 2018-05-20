@@ -39,9 +39,9 @@ public class NSThread extends NS {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
-        int n = particlePool.size();
         synchronized (particlePool) {
             Object [] states = particlePool.keySet().toArray();			
+            int n = states.length;
 
             //String [] states = (String []) o;
     		int i = Randomizer.nextInt(n);

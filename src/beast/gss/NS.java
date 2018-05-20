@@ -61,6 +61,7 @@ public class NS extends MCMC {
 
 	public Input<Double> epsilonInput = new Input<>("epsilon", "stopping criterion: smallest change in ML estimate to accept", 1e-6);
 	public Input<Double> stopFactorInput = new Input<>("stopFactor", "stopping criterion: use at least stopfactor * Information * particleCount steps", 2.0);
+	public Input<Integer> minStepsInput = new Input<>("minSteps", "minimal number of steps to take. Useful to guarantee chain does not get stuck in prior", 0);
 
 	public Input<Boolean> autoSubChainLengthInput = new Input<>("autoSubChainLength", "automatically determines subchain length based on number of accepted steps (unless subChainLength * paramCount is reached)", true);
 	public Input<Double> paramCountFactorInput = new Input<>("paramCountFactor", "determines length of subchain as multiplier of accepted steps before returning divided by number of parameters in the analysis"
@@ -510,7 +511,7 @@ public class NS extends MCMC {
 		double EPSILON = epsilonInput.get();
 
 		double stopFactor = stopFactorInput.get();
-		
+		int minSteps = minStepsInput.get();
 
 		double [] mlHistory = new double[HISTORY_LENGTH];
 		mlHistory[0] = -1.0; // to pass stop criterion when sampleNr = 0
@@ -519,8 +520,10 @@ public class NS extends MCMC {
 		// o we have not reached a user specified upper bound of steps (through chainLength) AND
 		//      o the number of samples is less than 2 * Information * #particles (stopFactor = 2 can be changed) OR
 		//      o the relative gain in ML estimate is less than ESPILON
-		while (sampleNr <= chainLength && (sampleNr < stopFactor * H * particleCount ||
-				Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH-1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH- 1) % HISTORY_LENGTH]) > EPSILON)) {
+			while (sampleNr <= chainLength && (
+					sampleNr < minSteps ||
+					sampleNr < stopFactor * H * particleCount ||
+					Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH-1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH- 1) % HISTORY_LENGTH]) > EPSILON)) {
 
 			// find particle with minimum likelihood
 			int iMin = 0;
@@ -597,6 +600,11 @@ public class NS extends MCMC {
 			}
 			sampleNr++;
 		}
+			
+		Log.info(sampleNr+"<="+ chainLength +"&& ("+ sampleNr +"<"+ stopFactor +"*"+ H +"*"+ particleCount +"||"
+					+"Math.abs("+mlHistory[(sampleNr +HISTORY_LENGTH-1) % HISTORY_LENGTH]+" - "+mlHistory[sampleNr % HISTORY_LENGTH]+")/Math.abs("+mlHistory[(sampleNr +HISTORY_LENGTH- 1) % HISTORY_LENGTH]+") > "+EPSILON);
+
+			
 		Log.info("Finished in " + sampleNr + " steps!");
 		
 		if (System.getProperty("beast.debug") != null) { 
