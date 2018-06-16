@@ -10,6 +10,7 @@ import beast.core.Loggable;
 import beast.core.Logger;
 import beast.util.XMLProducer;
 
+@Description("Trace logger that logs NSLikelihood as second column (used by NSLogAnalyser to prodoce posterior sample)")
 public class NSLogger extends Logger {
 	
 	@Override

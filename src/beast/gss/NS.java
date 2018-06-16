@@ -47,7 +47,7 @@ Start with  N points θ1,...,θN sampled from prior.
 */
 
 @Description("Nested sampling for phylogenetics")
-@Citation("Patricio Maturana, Brendon J. Brewer, Steffen Klaere, Remco Bouckaert. Model selection and parameter inference in phylogenetics using Nested Sampling. arXiv:1703.05471v3")
+@Citation("Patricio Maturana, Brendon J. Brewer, Steffen Klaere, Remco Bouckaert. Model selection and parameter inference in phylogenetics using Nested Sampling. Systematic Biology, In Press 2018")
 public class NS extends MCMC {
 	final static int SAMPLE_COUNT = 100;
 	

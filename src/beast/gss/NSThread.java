@@ -1,14 +1,16 @@
 
 package beast.gss;
 
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
+import beast.core.Description;
 import beast.core.Distribution;
 import beast.util.Randomizer;
 
-/** class for performing a one-threaded NS as part of MultiThreadedNS */
+@Description("class for performing a one-threaded NS as part of MultiThreadedNS")
 public class NSThread extends NS {
 	CountDownLatch countDown;
 	Map<String, Double> particlePool;
