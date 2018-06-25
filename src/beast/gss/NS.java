@@ -74,6 +74,7 @@ public class NS extends MCMC {
 
 	protected String[] particleStates;
 	protected double[] particleLikelihoods;
+	protected double[] particlePseudoLikelihoods;
 	protected double minLikelihood;
 
 	protected Distribution likelihood, originalPrior = null;
@@ -182,6 +183,7 @@ public class NS extends MCMC {
 
 		particleStates = new String[particleCount];
 		particleLikelihoods = new double[particleCount];
+		particlePseudoLikelihoods = new double[particleCount];
 
 
 	
@@ -392,7 +394,9 @@ public class NS extends MCMC {
 			particleStates[i] = state.toXML(0);
 			particleLikelihoods[i] = likelihood.getArrayValue();
 			if (originalPrior != null) {
-				particleLikelihoods[i] += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+				particlePseudoLikelihoods[i] = particleLikelihoods[i] + originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+			} else {
+				particlePseudoLikelihoods[i] = particleLikelihoods[i];
 			}
 		}
 		Log.warning(particleCount + " particles initialised");
@@ -444,7 +448,9 @@ public class NS extends MCMC {
 			particleStates[iMin] = state.toXML(sampleNr);
 			particleLikelihoods[iMin] = likelihood.getArrayValue();
 			if (originalPrior != null) {
-				particleLikelihoods[iMin] += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+				particlePseudoLikelihoods[iMin] = particleLikelihoods[iMin] + originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+			} else {
+				particlePseudoLikelihoods[iMin] = particleLikelihoods[iMin];
 			}
 
 			callUserFunction(sampleNr);
@@ -528,9 +534,11 @@ public class NS extends MCMC {
 			// find particle with minimum likelihood
 			int iMin = 0;
 			minLikelihood = particleLikelihoods[0];
+			double minPseudoLikelihood = particlePseudoLikelihoods[0];
 			for (int i = 1; i < particleCount; i++) {
 				if (particleLikelihoods[i] < minLikelihood) {
 					minLikelihood = particleLikelihoods[i];
+					minPseudoLikelihood = particlePseudoLikelihoods[i];
 					iMin = i;
 				}
 			}
@@ -543,7 +551,7 @@ public class NS extends MCMC {
 			robustlyCalcPosterior(posterior);
 			for (Logger logger: NSloggers) {
 				if (logger instanceof NSLogger) {
-					((NSLogger) logger).log(sampleNr, minLikelihood);
+					((NSLogger) logger).log(sampleNr, minPseudoLikelihood);
 				}
 			}
 			log(sampleNr);
@@ -561,7 +569,7 @@ public class NS extends MCMC {
 				//Z  += delta;
 
 				lw = logW - (sampleNr - 1.0) / N;
-				double Li = minLikelihood;
+				double Li = minPseudoLikelihood;
 //				if (originalPrior != null) {
 //					Li += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
 //				}
@@ -582,7 +590,7 @@ public class NS extends MCMC {
 			if (originalPrior != null) {
 				c = originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
 			}
-			updateParticleState(iMin, state.toXML(sampleNr), likelihood.getArrayValue() + c);
+			updateParticleState(iMin, state.toXML(sampleNr), likelihood.getArrayValue(), likelihood.getArrayValue() + c);
 
 			callUserFunction(sampleNr);
 
@@ -626,9 +634,10 @@ public class NS extends MCMC {
 		finished = true;
 	}
 
-	protected void updateParticleState(int iMin, String state, double likelihood) {
+	protected void updateParticleState(int iMin, String state, double likelihood, double pseudoLikelihood) {
 		particleStates[iMin] = state;
 		particleLikelihoods[iMin] = likelihood;
+		particlePseudoLikelihoods[iMin] = pseudoLikelihood;
 	}
 
 	// propose a new starting state for particle such that likelihood > minLikelihood
@@ -746,15 +755,15 @@ public class NS extends MCMC {
 
 			logAlpha = newLogPrior - oldLogPrior + logHastingsRatio; // CHECK
 																		// HASTINGS
-			double c = 0;
-			if (originalPrior != null) {
-				c = originalPrior.getCurrentLogP() - newLogPrior; 
-			}
+//			double c = 0;
+//			if (originalPrior != null) {
+//				c = originalPrior.getCurrentLogP() - newLogPrior; 
+//			}
 			if (printDebugInfo)
 				System.err.print(logAlpha + " " + newLogPrior + " " + oldLogPrior);
 
 			if ((logAlpha >= 0 || Randomizer.nextDouble() < Math.exp(logAlpha))
-					&& likelihood.getArrayValue() + c > minLikelihood) {
+					&& likelihood.getArrayValue() /*+ c*/ > minLikelihood) {
 				// accept
 				oldLogPrior = newLogPrior;
 				state.acceptCalculationNodes();
