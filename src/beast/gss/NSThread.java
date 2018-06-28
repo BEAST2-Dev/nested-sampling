@@ -67,13 +67,13 @@ public class NSThread extends NS {
 	}
 
 	@Override
-	protected void updateParticleState(int iMin, String state, double likelihood) {
+	protected void updateParticleState(int iMin, String state, double likelihood, double pseudoLikelihood) {
 		String minState = particleStates[iMin];
 		synchronized (particlePool) {
 			particlePool.remove(minState);
 			particlePool.put(state, likelihood);
 		}
-		super.updateParticleState(iMin, state, likelihood);
+		super.updateParticleState(iMin, state, likelihood, pseudoLikelihood);
 	}
 
 	boolean isFinished() {
