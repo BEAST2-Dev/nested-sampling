@@ -47,7 +47,8 @@ Start with  N points θ1,...,θN sampled from prior.
 */
 
 @Description("Nested sampling for phylogenetics")
-@Citation("Patricio Maturana, Brendon J. Brewer, Steffen Klaere, Remco Bouckaert. Model selection and parameter inference in phylogenetics using Nested Sampling. Systematic Biology, In Press 2018")
+@Citation(value="Patricio Maturana, Brendon J. Brewer, Steffen Klaere, Remco Bouckaert. Model selection and parameter inference in phylogenetics using Nested Sampling. Systematic Biology, syy050, 2018", 
+	year=2018, DOI="doi:10.1093/sysbio/syy050", firstAuthorSurname="Maturana")
 public class NS extends MCMC {
 	final static int SAMPLE_COUNT = 100;
 	
@@ -75,7 +76,7 @@ public class NS extends MCMC {
 	protected String[] particleStates;
 	protected double[] particleLikelihoods;
 	protected double[] particlePseudoLikelihoods;
-	protected double minLikelihood;
+	protected double minLikelihood, minPseudoLikelihood;
 
 	protected Distribution likelihood, originalPrior = null;
 	protected Distribution[] samplingDistribution;
@@ -96,7 +97,8 @@ public class NS extends MCMC {
 	double paramCountFactor = 1.0;
 	boolean autoSubChainLength = true;
 	
-	public NS() {}
+	public NS() {
+	}
 	
 	public NS(int chainLength, int preBurnin, int particleCount, int subChainLength, State state, List<Operator> operators, CompoundDistribution distribution, Double epsilon) {
 		initByName("chainLength", chainLength, 
@@ -111,6 +113,10 @@ public class NS extends MCMC {
 	
 	@Override
 	public void initAndValidate() {
+		if (sampleFromPriorInput.get()) {
+			throw new IllegalArgumentException("Input 'sampleFromPrior' must not be specified");
+		}
+
 		paramCountFactor = paramCountFactorInput.get();
 		autoSubChainLength = autoSubChainLengthInput.get();
 
@@ -156,8 +162,8 @@ public class NS extends MCMC {
 			} else {
 				originalPrior = new CompoundDistribution();
 				originalPrior.initByName("distribution", originalPriors);
+				originalPrior.setID("originalPrior");
 			}
-			originalPrior.setID("originalPrior");
 			list.add(originalPrior);
 			// set sampling distribution from Input
 			samplingDistribution = new Distribution[1];
@@ -228,13 +234,14 @@ public class NS extends MCMC {
 			burnIn = 0;
 			oldLogPrior = state.robustlyCalcPosterior(posterior);
 		} else {
-			do {
-				for (final StateNodeInitialiser initialiser : initialisersInput.get()) {
-					initialiser.initStateNodes();
-				}
-				oldLogPrior = state.robustlyCalcPosterior(posterior);
-				initialisationAttempts += 1;
-			} while (Double.isInfinite(oldLogPrior) && initialisationAttempts < numInitializationAttempts.get());
+// initialisation happens when intialising particles			
+//			do {
+//				for (final StateNodeInitialiser initialiser : initialisersInput.get()) {
+//					initialiser.initStateNodes();
+//				}
+//				oldLogPrior = state.robustlyCalcPosterior(posterior);
+//				initialisationAttempts += 1;
+//			} while (Double.isInfinite(oldLogPrior) && initialisationAttempts < numInitializationAttempts.get());
 		}
 		final long startTime = System.currentTimeMillis();
 
@@ -246,13 +253,6 @@ public class NS extends MCMC {
 
 		// System.err.println("Start state:");
 		// System.err.println(state.toString());
-
-		Log.info.println("Start likelihood: " + oldLogPrior + " "
-				+ (initialisationAttempts > 1 ? "after " + initialisationAttempts + " initialisation attempts" : ""));
-		if (Double.isInfinite(oldLogPrior) || Double.isNaN(oldLogPrior)) {
-			reportLogLikelihoods(posterior, "");
-			throw new RuntimeException("Could not find a proper state to initialise. Perhaps try another seed.");
-		}
 
 		loggers = loggersInput.get();
 
@@ -385,18 +385,38 @@ public class NS extends MCMC {
 	}
 
 	protected void initParticles() {
-		minLikelihood = Double.NEGATIVE_INFINITY;
+
 		for (int i = 0; i < particleCount; i++) {
+			minLikelihood = Double.NEGATIVE_INFINITY;
+
+			if (!restoreFromFile) {
+				for (final StateNodeInitialiser initialiser : initialisersInput.get()) {
+					initialiser.initStateNodes();
+				}
+				oldLogPrior = state.robustlyCalcPosterior(posterior);
+			}
+			
+			Log.info.println("Start likelihood: " + oldLogPrior + " ");
+					// + (initialisationAttempts > 1 ? "after " + initialisationAttempts + " initialisation attempts" : ""));
+			if (Double.isInfinite(oldLogPrior) || Double.isNaN(oldLogPrior)) {
+				reportLogLikelihoods(posterior, "");
+				throw new RuntimeException("Could not find a proper state to initialise. Perhaps try another seed.");
+			}
+
+			oldLogPrior = 0;
+			for (Distribution d : samplingDistribution) {
+				oldLogPrior += d.getArrayValue();
+			}
+
 			for (int j = 0; j < subChainLength; j++) {
 				composeProposal(1);
 			}
-
-			particleStates[i] = state.toXML(0);
-			particleLikelihoods[i] = likelihood.getArrayValue();
+reportLogLikelihoods(posterior, "");
 			if (originalPrior != null) {
-				particlePseudoLikelihoods[i] = particleLikelihoods[i] + originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+				updateParticleState(i, state.toXML(0), likelihood.getArrayValue(),
+						likelihood.getArrayValue() + originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP()); 
 			} else {
-				particlePseudoLikelihoods[i] = particleLikelihoods[i];
+				updateParticleState(i, state.toXML(0), likelihood.getArrayValue(), likelihood.getArrayValue());
 			}
 		}
 		Log.warning(particleCount + " particles initialised");
@@ -445,12 +465,11 @@ public class NS extends MCMC {
 				composeProposal(j + subChainLength * sampleNr);
 			}
 
-			particleStates[iMin] = state.toXML(sampleNr);
-			particleLikelihoods[iMin] = likelihood.getArrayValue();
+			
 			if (originalPrior != null) {
-				particlePseudoLikelihoods[iMin] = particleLikelihoods[iMin] + originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
+				updateParticleState(iMin, state.toXML(sampleNr), likelihood.getArrayValue(), likelihood.getArrayValue() + originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP()); 
 			} else {
-				particlePseudoLikelihoods[iMin] = particleLikelihoods[iMin];
+				updateParticleState(iMin, state.toXML(sampleNr), likelihood.getArrayValue(), likelihood.getArrayValue());
 			}
 
 			callUserFunction(sampleNr);
@@ -534,7 +553,7 @@ public class NS extends MCMC {
 			// find particle with minimum likelihood
 			int iMin = 0;
 			minLikelihood = particleLikelihoods[0];
-			double minPseudoLikelihood = particlePseudoLikelihoods[0];
+			minPseudoLikelihood = particlePseudoLikelihoods[0];
 			for (int i = 1; i < particleCount; i++) {
 				if (particleLikelihoods[i] < minLikelihood) {
 					minLikelihood = particleLikelihoods[i];
@@ -549,6 +568,9 @@ public class NS extends MCMC {
 				state.fromXML(particleStates[iMin]);
 			}
 			robustlyCalcPosterior(posterior);
+			//reportLogLikelihoods(posterior, "");
+			
+			
 			for (Logger logger: NSloggers) {
 				if (logger instanceof NSLogger) {
 					((NSLogger) logger).log(sampleNr, minPseudoLikelihood);
@@ -570,6 +592,7 @@ public class NS extends MCMC {
 
 				lw = logW - (sampleNr - 1.0) / N;
 				double Li = minPseudoLikelihood;
+//				Li = minLikelihood;
 //				if (originalPrior != null) {
 //					Li += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
 //				}
@@ -637,7 +660,11 @@ public class NS extends MCMC {
 	protected void updateParticleState(int iMin, String state, double likelihood, double pseudoLikelihood) {
 		particleStates[iMin] = state;
 		particleLikelihoods[iMin] = likelihood;
-		particlePseudoLikelihoods[iMin] = pseudoLikelihood;
+		if (originalPrior == null) {
+			particlePseudoLikelihoods[iMin] = likelihood;
+		} else {
+			particlePseudoLikelihoods[iMin] = pseudoLikelihood;
+		}
 	}
 
 	// propose a new starting state for particle such that likelihood > minLikelihood
@@ -755,15 +782,15 @@ public class NS extends MCMC {
 
 			logAlpha = newLogPrior - oldLogPrior + logHastingsRatio; // CHECK
 																		// HASTINGS
-//			double c = 0;
-//			if (originalPrior != null) {
-//				c = originalPrior.getCurrentLogP() - newLogPrior; 
-//			}
+			double c = 0;
+			if (originalPrior != null) {
+				c = originalPrior.getCurrentLogP() - newLogPrior; 
+			}
 			if (printDebugInfo)
 				System.err.print(logAlpha + " " + newLogPrior + " " + oldLogPrior);
 
 			if ((logAlpha >= 0 || Randomizer.nextDouble() < Math.exp(logAlpha))
-					&& likelihood.getArrayValue() /*+ c*/ > minLikelihood) {
+					&& likelihood.getArrayValue() + c > minPseudoLikelihood) {
 				// accept
 				oldLogPrior = newLogPrior;
 				state.acceptCalculationNodes();
