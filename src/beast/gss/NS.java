@@ -91,6 +91,7 @@ public class NS extends MCMC {
 	List<NSLogger> NSloggers;
 	
 	List<Double> likelihoods = new ArrayList<>();
+	List<String> states;
 	boolean finished = false;
 
 	int paramCount = 0;
@@ -384,14 +385,18 @@ public class NS extends MCMC {
 		return nslogger;
 	}
 
-	protected void initParticles() {
+	protected void initParticles(String startState, double minLikelihood0) {
 
 		for (int i = 0; i < particleCount; i++) {
-			minLikelihood = Double.NEGATIVE_INFINITY;
+			minLikelihood = minLikelihood0;
 
 			if (!restoreFromFile) {
-				for (final StateNodeInitialiser initialiser : initialisersInput.get()) {
-					initialiser.initStateNodes();
+				if (state != null) {
+					this.state.fromXML(startState);
+				} else {
+					for (final StateNodeInitialiser initialiser : initialisersInput.get()) {
+						initialiser.initStateNodes();
+					}
 				}
 				oldLogPrior = state.robustlyCalcPosterior(posterior);
 			}
@@ -438,7 +443,7 @@ reportLogLikelihoods(posterior, "");
 		}
 
 		// initialise states
-		initParticles();
+		initParticles(null, Double.NEGATIVE_INFINITY);
 
 		if (burnIn > 0) {
 			Log.warning.println("Please wait while BEAST takes " + burnIn + " pre-burnin samples");
@@ -481,7 +486,7 @@ reportLogLikelihoods(posterior, "");
 		}
 		
 
-		doInnerLoop(likelihoods);
+		doInnerLoop(likelihoods, states);
 		
 		
  		
@@ -521,7 +526,7 @@ reportLogLikelihoods(posterior, "");
 	 * @param likelihoods
 	 * @throws IOException
 	 */
-	protected void doInnerLoop(List<Double> likelihoods) throws IOException {
+	protected void doInnerLoop(List<Double> likelihoods, List<String> states) throws IOException {
 		// run nested sampling
 		double N = particleCount;	
 		double lw;
@@ -598,6 +603,9 @@ reportLogLikelihoods(posterior, "");
 //					Li += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
 //				}
 				likelihoods.add(Li);
+				if (states != null) {
+					states.add(state.toXML(sampleNr));
+				}
 				
 				double L = lw  + Li;
 				

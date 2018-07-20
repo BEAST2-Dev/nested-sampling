@@ -18,8 +18,8 @@ public class NSThread extends NS {
 	
 	
 	@Override
-	protected void initParticles() {
-		super.initParticles();
+	protected void initParticles(String startState, double minLikelihood0) {
+		super.initParticles(startState, minLikelihood0);
 		for (int i = 0; i < particleCount; i++) {
 			particlePool.put(particleStates[i], particleLikelihoods[i]);
 		}

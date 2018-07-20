@@ -11,25 +11,16 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
-import beast.core.Citation;
 import beast.core.Description;
-import beast.core.Distribution;
 import beast.core.Input;
 import beast.core.Logger;
-import beast.core.MCMC;
 import beast.core.NSLogger;
 import beast.core.Operator;
 import beast.core.State;
-import beast.core.StateNode;
-import beast.core.StateNodeInitialiser;
-import beast.core.parameter.Parameter;
 import beast.core.util.CompoundDistribution;
-import beast.core.util.Evaluator;
 import beast.core.util.Log;
-import beast.evolution.tree.Tree;
 import beast.evolution.tree.TreeInterface;
 import beast.util.NSLogAnalyser;
-import beast.util.Randomizer;
 
 
 
@@ -176,6 +167,8 @@ public class DynamicNestedSampling extends NS {
 		}
 
 
+		
+		
 		doDynamicLoop();
 		
 
@@ -238,10 +231,12 @@ public class DynamicNestedSampling extends NS {
 //		generate a additional thread (or alternatively n batch	additional threads) starting at L_{j−1} 
 //		and ending with the first sample taken with likelihood greater than L_{k+1};
 //	end
-	private void doDynamicLoop() {
+	private void doDynamicLoop() throws IOException {
 //		Generate a nested sampling run with a constant number of live points n_init;
 		doLoop();
 		ends.add(likelihoods.size());
+
+		restoreFromFile = false;
 
 //		while (dynamic termination condition not satisfied) do
 		while (true) {
@@ -257,15 +252,15 @@ public class DynamicNestedSampling extends NS {
 //			generate a additional thread (or alternatively n batch	additional threads) starting at L_{j−1}
 			if (j == 0) {
 				minLikelihood = Double.NEGATIVE_INFINITY;
+				initParticles(null, Double.NEGATIVE_INFINITY);
 			} else {
 				minLikelihood = likelihoods.get(j-1);
+				initParticles(states.get(j-1), minLikelihood);
 			}
 			maxLikelihood = likelihoods.get(k);
-			state = 
-			sampleFromPrior()
 			
 //			and ending with the first sample taken with likelihood greater than L_{k+1};
-			doInnerLoop(likelihoods);
+			doInnerLoop(likelihoods, states);
 			ends.add(likelihoods.size());
 		}		
 //		end
@@ -318,11 +313,21 @@ public class DynamicNestedSampling extends NS {
 		double [] IZ = new double[n.length];
 		// parameter importance
 		double [] IP = new double[n.length];
-				
+		
+		double logX = 0;
+		double logX1 = - Math.log(n[0]);
+		double logX2 = logX1 - Math.log(n[1]);
+		double log2 = Math.log(2.0);
+		
 		for (int sampleNr = 0; sampleNr < n.length; sampleNr++) {
 			
-			double logW = Math.log(1.0 - Math.exp(-2.0/n[sampleNr])) - Math.log(2.0) ; ???
-			double lw = logW - (sampleNr - 1.0) / n[sampleNr];
+//			double logW = Math.log(1.0 - Math.exp(-2.0/n[sampleNr])) - Math.log(2.0) ; ???
+//			double lw = logW - (sampleNr - 1.0) / n[sampleNr];
+
+			double lw = -log2 + logX + Math.log(1.0-1.0/(n[sampleNr]*n[sampleNr + 1]));
+			logX = logX1;
+			logX1 = logX2;
+			logX2 += Math.log(n[sampleNr+2]);
 			
 			double Li = L[sampleNr];						
 			double L0 = lw  + Li;
@@ -393,107 +398,4 @@ public class DynamicNestedSampling extends NS {
 		}
 	}
 
-	/**
-	 * main MCMC loop
-	 * 
-	 * @throws IOException
-	 * *
-	 */
-	@Override
-	protected void doLoop() throws IOException {
-		double N = particleCount;	
-		
-		oldLogPrior = 0;
-		for (Distribution d : samplingDistribution) {
-			oldLogPrior += d.getArrayValue();
-		}
-
-		// initialise states
-		initParticles();
-
-		if (burnIn > 0) {
-			Log.warning.println("Please wait while BEAST takes " + burnIn + " pre-burnin samples");
-		}
-		
-
-		// sample from prior
-		minLikelihood = Double.NEGATIVE_INFINITY; // guarantee that likelihood is ignored when sampling from prior
-		for (int sampleNr = -burnIn; sampleNr < 0; sampleNr++) {
-			// find particle with minimum likelihood
-			int iMin = Randomizer.nextInt(particleCount);
-
-			// init state
-			state.fromXML(particleStates[Randomizer.nextInt(particleCount)]);
-
-			// init calculation nodes & oldLogPrior
-			robustlyCalcPosterior(posterior);
-			oldLogPrior = 0;
-			for (Distribution d : samplingDistribution) {
-				oldLogPrior += d.getArrayValue();
-			}
-			
-			for (int j = 0; j < subChainLength; j++) {
-				composeProposal(j + subChainLength * sampleNr);
-			}
-
-			
-			if (originalPrior != null) {
-				updateParticleState(iMin, state.toXML(sampleNr), likelihood.getArrayValue(), likelihood.getArrayValue() + originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP()); 
-			} else {
-				updateParticleState(iMin, state.toXML(sampleNr), likelihood.getArrayValue(), likelihood.getArrayValue());
-			}
-
-			callUserFunction(sampleNr);
-
-			if (posterior.getCurrentLogP() == Double.POSITIVE_INFINITY) {
-				throw new RuntimeException(
-						"Encountered a positive infinite posterior. This is a sign there may be improper priors or numeric instability in the model.");
-			}
-		}
-		
-
-		doInnerLoop(likelihoods);
-		
-		
- 		
-		double [] Zestimates = new double[SAMPLE_COUNT];
-		for (int k = 0; k < SAMPLE_COUNT; k++) {
- 	 		double logX = 0.0;
-	 		double Z = 0;
-			Z = -Double.MAX_VALUE;
-	 		for (int i = 0; i < likelihoods.size(); i++) {
-	 			double u = NSLogAnalyser.nextBeta(N, 1.0); 			
-	 			double lw = logX + Math.log(1.0 - u);
-	 			double L = lw  + likelihoods.get(i);
-	 			Z = DynamicNestedSampling.logPlus(Z, L);
-	 			logX += Math.log(u);
-	 		}
-	 		Zestimates[k] = Z;
- 		}
-		double sum = 0;
-		for (double d : Zestimates) {
-			sum += d;
-		}
-		Z = sum / SAMPLE_COUNT;
-		double sum2 = 0;
-		for (double d : Zestimates) {
-			sum2 += (d - Z) * (d - Z);
-		}
-		double var = sum2/(SAMPLE_COUNT - 1.0);
-		double stdev = Math.sqrt(var);
- 		Log.info("Marginal likelihood: " + Z + "(" + stdev +")");
-
- 		Log.info("Information: " + H);
- 		Log.info("SD: " + Math.sqrt(H/N));
- 	}
-
-	protected void updateParticleState(int iMin, String state, double likelihood, double pseudoLikelihood) {
-		particleStates[iMin] = state;
-		particleLikelihoods[iMin] = likelihood;
-		if (originalPrior == null) {
-			particlePseudoLikelihoods[iMin] = likelihood;
-		} else {
-			particlePseudoLikelihoods[iMin] = pseudoLikelihood;
-		}
-	}
 }
