@@ -50,7 +50,7 @@ Start with  N points θ1,...,θN sampled from prior.
 @Description("Nested sampling for phylogenetics")
 @Citation(value="Patricio Maturana, Brendon J. Brewer, Steffen Klaere, Remco Bouckaert. Model selection and parameter inference in phylogenetics using Nested Sampling. Systematic Biology, syy050, 2018", 
 	year=2018, DOI="doi:10.1093/sysbio/syy050", firstAuthorSurname="Maturana")
-public class NS extends MCMC {
+public class NIS extends MCMC {
 	final static int SAMPLE_COUNT = 100;
 	
 	public Input<Integer> particleCountInput = new Input<>("particleCount", "number of particles (default 100)", 100);
@@ -98,10 +98,10 @@ public class NS extends MCMC {
 	double paramCountFactor = 1.0;
 	boolean autoSubChainLength = true;
 	
-	public NS() {
+	public NIS() {
 	}
 	
-	public NS(int chainLength, int preBurnin, int particleCount, int subChainLength, State state, List<Operator> operators, CompoundDistribution distribution, Double epsilon) {
+	public NIS(int chainLength, int preBurnin, int particleCount, int subChainLength, State state, List<Operator> operators, CompoundDistribution distribution, Double epsilon) {
 		initByName("chainLength", chainLength, 
 				"preBurnin", preBurnin, 
 				"particleCount", particleCount,

@@ -76,7 +76,7 @@ public class NS extends MCMC {
 	protected String[] particleStates;
 	protected double[] particleLikelihoods;
 	protected double[] particlePseudoLikelihoods;
-	protected double minLikelihood, minPseudoLikelihood;
+	protected double minLikelihood, minPseudoLikelihood, maxLikelihood = Double.POSITIVE_INFINITY;
 
 	protected Distribution likelihood, originalPrior = null;
 	protected Distribution[] samplingDistribution;
@@ -370,7 +370,7 @@ public class NS extends MCMC {
 
 	} // run;
 
-	private NSLogger replaceLogger(Logger logger) {
+	protected NSLogger replaceLogger(Logger logger) {
 		Log.warning("replacing logger " + logger.getID() + " with NSLogger");
 		NSLogger nslogger = new NSLogger();
 		nslogger.initByName("logEvery", logger.everyInput.get(),
@@ -545,7 +545,8 @@ reportLogLikelihoods(posterior, "");
 		// o we have not reached a user specified upper bound of steps (through chainLength) AND
 		//      o the number of samples is less than 2 * Information * #particles (stopFactor = 2 can be changed) OR
 		//      o the relative gain in ML estimate is less than ESPILON
-			while (sampleNr <= chainLength && (
+			while (sampleNr <= chainLength && 
+					minLikelihood < maxLikelihood && (
 					sampleNr < minSteps ||
 					sampleNr < stopFactor * H * particleCount ||
 					Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH-1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH- 1) % HISTORY_LENGTH]) > EPSILON)) {
