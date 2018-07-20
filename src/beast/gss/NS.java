@@ -551,10 +551,10 @@ reportLogLikelihoods(posterior, "");
 		//      o the number of samples is less than 2 * Information * #particles (stopFactor = 2 can be changed) OR
 		//      o the relative gain in ML estimate is less than ESPILON
 			while (sampleNr <= chainLength && 
-					minLikelihood < maxLikelihood && (
+					(minLikelihood < maxLikelihood || Double.isInfinite(maxLikelihood) && (
 					sampleNr < minSteps ||
 					sampleNr < stopFactor * H * particleCount ||
-					Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH-1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH- 1) % HISTORY_LENGTH]) > EPSILON)) {
+					Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH-1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH- 1) % HISTORY_LENGTH]) > EPSILON))) {
 
 			// find particle with minimum likelihood
 			int iMin = 0;

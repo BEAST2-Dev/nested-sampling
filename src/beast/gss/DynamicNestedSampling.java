@@ -28,12 +28,19 @@ import beast.util.NSLogAnalyser;
 public class DynamicNestedSampling extends NS {
 
 	public Input<Double> goalInput = new Input<>("goal", "determines whetehr more particles are drawn to get accurate "
-			+ "evidence/marginal likelihood estimate (goal=0.0) or more accurate posterior sample (goal=1.0)", 0.0);
+			+ "evidence/marginal likelihood estimate (goal=0.0) or more accurate posterior sample (goal=1.0)", 1.0);
 	public Input<Double> fractionInput = new Input<>("fraction", "fraction of importance to be revisited", 0.9);
+	public Input<Double> targetSDInput = new Input<>("targetSD", "target standard deviation for the marginal likelihood/evidence", 3.0);
+	
 	
 	private double goal, fraction;
 	private double [] importance;
+	private int [] n0;
+	private double [] L0;
+	private String [] states0;
+	private double evidenceSD, targetSD;
 	
+
 	public DynamicNestedSampling() {
 	}
 	
@@ -62,6 +69,11 @@ public class DynamicNestedSampling extends NS {
 		goal = goalInput.get();
 		
 		states = new ArrayList<>();
+		
+		targetSD = targetSDInput.get();
+		if (targetSD <= 0) {
+			throw new IllegalArgumentException("targetSD should be positive, not " + targetSDInput.get());
+		}
 	}
 
 	@Override
@@ -237,10 +249,14 @@ public class DynamicNestedSampling extends NS {
 
 		restoreFromFile = false;
 
-//		while (dynamic termination condition not satisfied) do
 		while (true) {
 //			recalculate importance I(G,i) of all points;
 			calcImportancePerPoint();
+
+//			if (dynamic termination condition not satisfied) return
+			if (evidenceSD < targetSD) {
+				return;
+			}
 			
 //			find first point j and last point k with importance of greater than some fraction f (we use f=0.9) of the largest importance;
 			int [] startend = new int[2];
@@ -252,9 +268,9 @@ public class DynamicNestedSampling extends NS {
 			if (j == 0) {
 				initParticles(null, Double.NEGATIVE_INFINITY);
 			} else {
-				initParticles(states0[j-1], L[j-1]);
+				initParticles(states0[j-1], L0[j-1]);
 			}
-			maxLikelihood = k+1 < L.length ? L[k + 1] : Double.POSITIVE_INFINITY;
+			maxLikelihood = k+1 < L0.length ? L0[k + 1] : Double.POSITIVE_INFINITY;
 			
 //			and ending with the first sample taken with likelihood greater than L_{k+1};
 			doInnerLoop();
@@ -264,21 +280,17 @@ public class DynamicNestedSampling extends NS {
 	}
 
 
-	int [] n;
-	double [] L;
-	String [] states0;
-	
 	// merge in likelihoods & states and update n accordingly
 	private void updateLikelihoodsAndN() {
 		
 		// initialise from start run
-		if (n == null) {
-			n = new int[likelihoods.size()];
-			L = new double[likelihoods.size()];
+		if (n0 == null) {
+			n0 = new int[likelihoods.size()];
+			L0 = new double[likelihoods.size()];
 			states0 = new String[likelihoods.size()];
 			for (int i = 0; i < likelihoods.size(); i++) {
-				n[i] = particleCount; 
-				L[i] = likelihoods.get(i);
+				n0[i] = particleCount; 
+				L0[i] = likelihoods.get(i);
 				states0[i] = states.get(i);
 			}
 			
@@ -286,16 +298,16 @@ public class DynamicNestedSampling extends NS {
 			states.clear();
 			return;
 		}
-		int size = n.length;
+		int size = n0.length;
 
-		int [] n2 = new int[n.length + size];
-		System.arraycopy(n, 0, n2, 0, n.length);
-		n = n2;
-		double [] L2 = new double[L.length + size];
-		System.arraycopy(L, 0, L2, 0, L.length);
-		L = L2;
-		String [] S2 = new String[states0.length + size];
-		System.arraycopy(states0, 0, S2, 0, states0.length);
+		int [] n2 = new int[size + likelihoods.size()];
+		System.arraycopy(n0, 0, n2, 0, size);
+		n0 = n2;
+		double [] L2 = new double[size + likelihoods.size()];
+		System.arraycopy(L0, 0, L2, 0, size);
+		L0 = L2;
+		String [] S2 = new String[size + likelihoods.size()];
+		System.arraycopy(states0, 0, S2, 0, size);
 		states0 = S2;
 		
 		// merge follow up runs
@@ -304,16 +316,16 @@ public class DynamicNestedSampling extends NS {
 		int iStart = -1, iEnd = -1;
 		for (int k = 0; k < likelihoods.size(); k++) {
 			double likelihood = likelihoods.get(k);
-			int i = Arrays.binarySearch(L, 0, size + k, likelihood);
+			int i = Arrays.binarySearch(L0, 0, size, likelihood);
 			if (i < 0) {
 				// (-(insertion point) - 1
 				i = 1 - i;
 			}
-			System.arraycopy(L, i, L, i+1, size - i);
-			L[i] = likelihood;
+			System.arraycopy(L0, i, L0, i+1, size - i);
+			L0[i] = likelihood;
 			System.arraycopy(states0, i, states0, i+1, size - i);
 			states0[i] = states.get(k);
-			System.arraycopy(n, i, n, i+1, size - i);
+			System.arraycopy(n0, i, n0, i+1, size - i);
 			size++;
 			
 			if (k == start) {
@@ -323,7 +335,7 @@ public class DynamicNestedSampling extends NS {
 			}
 		}
 		for (int k = iStart; k < iEnd; k++) {
-			n[k] = n[k] + particleCount;
+			n0[k] = n0[k] + particleCount;
 		}
 		
 		likelihoods.clear();
@@ -335,39 +347,89 @@ public class DynamicNestedSampling extends NS {
 		double Z = -Double.MAX_VALUE; 
 
 		// evidence importance
-		double [] IZ = new double[n.length];
+		double [] IZ = new double[n0.length];
 		// parameter importance
-		double [] IP = new double[n.length];
+		double [] IP = new double[n0.length];
 		
-		double logX = 0;
-		double logX1 = - Math.log(n[0]);
-		double logX2 = logX1 - Math.log(n[1]);
-		double log2 = Math.log(2.0);
-				
-		for (int sampleNr = 0; sampleNr < n.length-2; sampleNr++) {
+//		double logX = 0;
+//		double logX1 = - Math.log(n0[0]);
+//		double logX2 = logX1 - Math.log(n0[1]);
+//		double log2 = Math.log(2.0);
+//				
+//		for (int sampleNr = 0; sampleNr < n0.length-2; sampleNr++) {
+//			
+//			double logW = Math.log(1.0 - Math.exp(-2.0/n0[sampleNr])) - Math.log(2.0) ;
+//			double lw = logW - (sampleNr - 1.0) / n0[sampleNr];
+//
+////			double lw = -log2 + logX + Math.log(1.0-Math.exp(-n[sampleNr]-n[sampleNr + 1]));
+//			logX = logX1;
+//			logX1 = logX2;
+//			logX2 += 1.0/n0[sampleNr+2];
+//			
+//			double Li = L0[sampleNr];						
+//			double L0 = lw  + Li;
+//			
+//			IP[sampleNr] = L0/n0[sampleNr];
+//			Z = logPlus(Z, L0);
+//			IZ[sampleNr] = Z;
+//		}
+		
+		
+		
+		
+		
+ 		double zMean = 0;
+ 		double v = 0;
+ 		double hMean = 0, H = 0;
+ 		final double RESAMPLE_COUNT = 100;
+ 		Arrays.fill(IZ,  0);
+ 		Arrays.fill(IP,  0);
+ 		
+ 		for (int k = 0; k < RESAMPLE_COUNT; k++) {
+ 			double logX = 0;
+			H = 0;
+		 	double Zb = -Double.MAX_VALUE;
+	 		Z = -Double.MAX_VALUE;
+	 		for (int i = 0; i < n0.length; i++) {
+	 			double u = NSLogAnalyser.nextBeta(n0[i], 1.0); 			
+	 			double lw = logX + Math.log(1.0 - u);
+	 			double L = lw  + L0[i];
+	 			IP[i] += L;
+	 			Z = NS.logPlus(Z, L);
+	 			IZ[i] += Z;
+	 			// weights[i] += L; 			
+	 			logX += Math.log(u);
+	 			if (i > 0) {
+	 				double Li = L0[i-1];
+	 				H = Math.exp(L - Z) * Li - Z + Math.exp(Zb - Z)*(H + Zb);
+	 				// Log.info("Math.exp("+L+" - "+Z+") * "+Li+ " -"+ Z +"+ Math.exp("+Zb+"- "+ Z+")*("+H+" + "+Zb+")");
+	 				Zb = Z;
+	 			}
+	 		}
 			
-			double logW = Math.log(1.0 - Math.exp(-2.0/n[sampleNr])) - Math.log(2.0) ;
-			double lw = logW - (sampleNr - 1.0) / n[sampleNr];
-
-//			double lw = -log2 + logX + Math.log(1.0-Math.exp(-n[sampleNr]-n[sampleNr + 1]));
-			logX = logX1;
-			logX1 = logX2;
-			logX2 += 1.0/n[sampleNr+2];
-			
-			double Li = L[sampleNr];						
-			double L0 = lw  + Li;
-			
-			IP[sampleNr] = L0/n[sampleNr];
-			Z = logPlus(Z, L0);
-			IZ[sampleNr] = Z;
+	 		zMean += Z;
+			v += Z * Z;
+	 		hMean += H;
 		}
+//		for (int i = 0; i < NSLikelihoods.length; i++) {
+//			weights[i] /= RESAMPLE_COUNT;
+//		}
+		
+		Z = zMean / RESAMPLE_COUNT;
+		v = Math.sqrt(v/RESAMPLE_COUNT-Z*Z);
+		H = hMean / RESAMPLE_COUNT;
+		Log.warning("\nMarginal likelihood: " + Z + " SD=(" + v + ") Information: " + H);
+		evidenceSD = v;
+
+		
+		
 		
 		// IZ[n] now contains \sum_i<n log(Z_i)
 		// we want IZ[n] = \sum_i>n Z
-		IZ[n.length-2] = IZ[n.length-3]; 
-		IZ[n.length-1] = IZ[n.length-2]; 
+		IZ[n0.length-2] = IZ[n0.length-3]; 
+		IZ[n0.length-1] = IZ[n0.length-2]; 
 		double max = IZ[IZ.length - 1];
-		for (int i = 0; i < n.length; i++) {
+		for (int i = 0; i < n0.length; i++) {
 			IZ[i] -= max;
 			IZ[i] = 1.0 - Math.exp(IZ[i]);
 		}
@@ -379,7 +441,7 @@ public class DynamicNestedSampling extends NS {
 				max = d;
 			}
 		}
-		for (int i = 0; i < n.length; i++) {
+		for (int i = 0; i < n0.length; i++) {
 			IP[i] = Math.exp(IP[i] - max);
 		}
 		
@@ -395,8 +457,8 @@ public class DynamicNestedSampling extends NS {
 
 		
 		// importance per point
-		importance = new double[n.length];
-		for (int i = 0; i < n.length; i++) {
+		importance = new double[n0.length];
+		for (int i = 0; i < n0.length; i++) {
 			importance[i] = (1-goal) * IZ[i]/sumZ + goal * IP[i]/sumP;
 		}		
 	}
@@ -413,7 +475,8 @@ public class DynamicNestedSampling extends NS {
 		}
 		
 		double maxFraction = max * fraction;
-		
+		startend[0] = -1;
+		startend[1] = -1;
 		for (int i = 0; i < importance.length; i++) {
 			if (importance[i] > maxFraction) {
 				if (startend[0] == -1) {
