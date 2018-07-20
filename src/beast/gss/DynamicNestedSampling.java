@@ -28,12 +28,11 @@ import beast.util.NSLogAnalyser;
 public class DynamicNestedSampling extends NS {
 
 	public Input<Double> goalInput = new Input<>("goal", "determines whetehr more particles are drawn to get accurate "
-			+ "evidence/marginal likelihood estimate (goal=0.0) or more accurate posterior sample (goal=1.0)", 1.0);
+			+ "evidence/marginal likelihood estimate (goal=0.0) or more accurate posterior sample (goal=1.0)", 0.0);
 	public Input<Double> fractionInput = new Input<>("fraction", "fraction of importance to be revisited", 0.9);
 	
 	private double goal, fraction;
 	private double [] importance;
-	private List<Integer> ends; // indicate end of likelihoods last added
 	
 	public DynamicNestedSampling() {
 	}
@@ -57,12 +56,12 @@ public class DynamicNestedSampling extends NS {
 			throw new IllegalArgumentException("fraction should be between 0 and 1, not " + fractionInput.get());
 		}
 		fraction = fractionInput.get();
-		if (goalInput.get() <= 0 || goalInput.get() >= 1) {
+		if (goalInput.get() < 0 || goalInput.get() > 1) {
 			throw new IllegalArgumentException("goal should be between 0 and 1, not " + goalInput.get());
 		}
 		goal = goalInput.get();
 		
-		ends = new ArrayList<>();
+		states = new ArrayList<>();
 	}
 
 	@Override
@@ -234,7 +233,7 @@ public class DynamicNestedSampling extends NS {
 	private void doDynamicLoop() throws IOException {
 //		Generate a nested sampling run with a constant number of live points n_init;
 		doLoop();
-		ends.add(likelihoods.size());
+		updateLikelihoodsAndN();
 
 		restoreFromFile = false;
 
@@ -251,62 +250,88 @@ public class DynamicNestedSampling extends NS {
 			
 //			generate a additional thread (or alternatively n batch	additional threads) starting at L_{j−1}
 			if (j == 0) {
-				minLikelihood = Double.NEGATIVE_INFINITY;
 				initParticles(null, Double.NEGATIVE_INFINITY);
 			} else {
-				minLikelihood = likelihoods.get(j-1);
-				initParticles(states.get(j-1), minLikelihood);
+				initParticles(states0[j-1], L[j-1]);
 			}
-			maxLikelihood = likelihoods.get(k);
+			maxLikelihood = k+1 < L.length ? L[k + 1] : Double.POSITIVE_INFINITY;
 			
 //			and ending with the first sample taken with likelihood greater than L_{k+1};
-			doInnerLoop(likelihoods, states);
-			ends.add(likelihoods.size());
+			doInnerLoop();
+			updateLikelihoodsAndN();
 		}		
 //		end
 	}
 
-	private void calcImportancePerPoint() {
-		int [] n = new int[likelihoods.size()];
-		double [] L = new double[likelihoods.size()];
+
+	int [] n;
+	double [] L;
+	String [] states0;
+	
+	// merge in likelihoods & states and update n accordingly
+	private void updateLikelihoodsAndN() {
 		
 		// initialise from start run
-		for (int i = 0; i < ends.get(0); i++) {
-			n[i] = particleCount; 
-			L[i] = likelihoods.get(i);
+		if (n == null) {
+			n = new int[likelihoods.size()];
+			L = new double[likelihoods.size()];
+			states0 = new String[likelihoods.size()];
+			for (int i = 0; i < likelihoods.size(); i++) {
+				n[i] = particleCount; 
+				L[i] = likelihoods.get(i);
+				states0[i] = states.get(i);
+			}
+			
+			likelihoods.clear();
+			states.clear();
+			return;
 		}
-		int size = ends.get(0);
+		int size = n.length;
+
+		int [] n2 = new int[n.length + size];
+		System.arraycopy(n, 0, n2, 0, n.length);
+		n = n2;
+		double [] L2 = new double[L.length + size];
+		System.arraycopy(L, 0, L2, 0, L.length);
+		L = L2;
+		String [] S2 = new String[states0.length + size];
+		System.arraycopy(states0, 0, S2, 0, states0.length);
+		states0 = S2;
 		
 		// merge follow up runs
-		for (int j = 1; j < ends.size(); j++) {
-			int start = ends.get(j-1);
-			int end = ends.get(j);
-						
-			int iStart = -1, iEnd = -1;
-			for (int k = start; k < end; k++) {
-				double likelihood = likelihoods.get(start);
-				int i = Arrays.binarySearch(L, 0, size, likelihood);
-				if (i < 0) {
-					// (-(insertion point) - 1
-					i = 1 - i;
-				}
-				System.arraycopy(L, i, L, i+1, size - i);
-				L[i] = likelihood;
-				System.arraycopy(n, i, n, i+1, size - i);
-				
-				if (k == start) {
-					iStart = i;
-				} else if (k == end-1) {
-					iEnd = i;
-				}
+		int start = 0;
+					
+		int iStart = -1, iEnd = -1;
+		for (int k = 0; k < likelihoods.size(); k++) {
+			double likelihood = likelihoods.get(k);
+			int i = Arrays.binarySearch(L, 0, size + k, likelihood);
+			if (i < 0) {
+				// (-(insertion point) - 1
+				i = 1 - i;
 			}
-			for (int k = iStart; k < iEnd; k++) {
-				n[k] = n[k] + particleCount;
+			System.arraycopy(L, i, L, i+1, size - i);
+			L[i] = likelihood;
+			System.arraycopy(states0, i, states0, i+1, size - i);
+			states0[i] = states.get(k);
+			System.arraycopy(n, i, n, i+1, size - i);
+			size++;
+			
+			if (k == start) {
+				iStart = i;
+			} else {
+				iEnd = i;
 			}
 		}
+		for (int k = iStart; k < iEnd; k++) {
+			n[k] = n[k] + particleCount;
+		}
 		
-		// calculate weights
-		 
+		likelihoods.clear();
+		states.clear();
+	}
+	
+	
+	private void calcImportancePerPoint() {
 		double Z = -Double.MAX_VALUE; 
 
 		// evidence importance
@@ -318,31 +343,33 @@ public class DynamicNestedSampling extends NS {
 		double logX1 = - Math.log(n[0]);
 		double logX2 = logX1 - Math.log(n[1]);
 		double log2 = Math.log(2.0);
-		
-		for (int sampleNr = 0; sampleNr < n.length; sampleNr++) {
+				
+		for (int sampleNr = 0; sampleNr < n.length-2; sampleNr++) {
 			
-//			double logW = Math.log(1.0 - Math.exp(-2.0/n[sampleNr])) - Math.log(2.0) ; ???
-//			double lw = logW - (sampleNr - 1.0) / n[sampleNr];
+			double logW = Math.log(1.0 - Math.exp(-2.0/n[sampleNr])) - Math.log(2.0) ;
+			double lw = logW - (sampleNr - 1.0) / n[sampleNr];
 
-			double lw = -log2 + logX + Math.log(1.0-1.0/(n[sampleNr]*n[sampleNr + 1]));
+//			double lw = -log2 + logX + Math.log(1.0-Math.exp(-n[sampleNr]-n[sampleNr + 1]));
 			logX = logX1;
 			logX1 = logX2;
-			logX2 += Math.log(n[sampleNr+2]);
+			logX2 += 1.0/n[sampleNr+2];
 			
 			double Li = L[sampleNr];						
 			double L0 = lw  + Li;
 			
-			IP[sampleNr] = L0;
+			IP[sampleNr] = L0/n[sampleNr];
 			Z = logPlus(Z, L0);
 			IZ[sampleNr] = Z;
 		}
 		
 		// IZ[n] now contains \sum_i<n log(Z_i)
 		// we want IZ[n] = \sum_i>n Z
+		IZ[n.length-2] = IZ[n.length-3]; 
+		IZ[n.length-1] = IZ[n.length-2]; 
 		double max = IZ[IZ.length - 1];
 		for (int i = 0; i < n.length; i++) {
 			IZ[i] -= max;
-			IZ[i] = Math.exp(IZ[i]);
+			IZ[i] = 1.0 - Math.exp(IZ[i]);
 		}
 
 		// IP[n] now contains log(L_iw_i)

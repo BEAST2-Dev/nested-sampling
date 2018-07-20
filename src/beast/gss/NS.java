@@ -391,7 +391,7 @@ public class NS extends MCMC {
 			minLikelihood = minLikelihood0;
 
 			if (!restoreFromFile) {
-				if (state != null) {
+				if (startState != null) {
 					this.state.fromXML(startState);
 				} else {
 					for (final StateNodeInitialiser initialiser : initialisersInput.get()) {
@@ -486,7 +486,7 @@ reportLogLikelihoods(posterior, "");
 		}
 		
 
-		doInnerLoop(likelihoods, states);
+		doInnerLoop();
 		
 		
  		
@@ -526,7 +526,7 @@ reportLogLikelihoods(posterior, "");
 	 * @param likelihoods
 	 * @throws IOException
 	 */
-	protected void doInnerLoop(List<Double> likelihoods, List<String> states) throws IOException {
+	protected void doInnerLoop() throws IOException {
 		// run nested sampling
 		double N = particleCount;	
 		double lw;
