@@ -26,20 +26,26 @@ import beast.util.NSLogAnalyser;
 
 @Description("Dynamic nested sampling for phylogenetics")
 public class DynamicNestedSampling extends NS {
-
-	public Input<Double> goalInput = new Input<>("goal", "determines whetehr more particles are drawn to get accurate "
+	enum Goal {evidence, posterior, mixture}
+	public Input<Goal> goalInput = new Input<>("goal", "fraction of importance to be revisited", Goal.posterior, Goal.values());
+	
+	public Input<Double> gInput = new Input<>("G", "G-parameter from DNS paper. Ignored unless goal=\"mixture\". "
+			+ "Determines whether more particles are drawn to get accurate "
 			+ "evidence/marginal likelihood estimate (goal=0.0) or more accurate posterior sample (goal=1.0)", 1.0);
-	public Input<Double> fractionInput = new Input<>("fraction", "fraction of importance to be revisited", 0.9);
+	public Input<Double> fractionInput = new Input<>("fraction", "fraction of importance to be revisited", 0.99);
 	public Input<Double> targetSDInput = new Input<>("targetSD", "target standard deviation for the marginal likelihood/evidence", 3.0);
 	
 	
-	private double goal, fraction;
+	private Goal goal;
+	private double g, fraction;
 	private double [] importance;
 	private int [] n0;
 	private double [] L0;
 	private String [] states0;
+	private double [] weights0;
+	private int [] order0;
 	private double evidenceSD, targetSD;
-	
+
 
 	public DynamicNestedSampling() {
 	}
@@ -63,10 +69,22 @@ public class DynamicNestedSampling extends NS {
 			throw new IllegalArgumentException("fraction should be between 0 and 1, not " + fractionInput.get());
 		}
 		fraction = fractionInput.get();
-		if (goalInput.get() < 0 || goalInput.get() > 1) {
-			throw new IllegalArgumentException("goal should be between 0 and 1, not " + goalInput.get());
-		}
+		
 		goal = goalInput.get();
+		switch (goal) {
+		case mixture:
+			if (gInput.get() < 0 || gInput.get() > 1) {
+				throw new IllegalArgumentException("goal should be between 0 and 1, not " + gInput.get());
+			}
+			g = gInput.get();
+			break;
+		case posterior:
+			g = 1;
+			break;
+		case evidence:
+			g = 0;
+			break;			
+		}
 		
 		states = new ArrayList<>();
 		
@@ -206,6 +224,17 @@ public class DynamicNestedSampling extends NS {
 			log.close();
 		}
 
+ 		// max nr of posterior samples
+ 		double ESS = 0;
+ 		for (int i = 0; i < weights0.length; i++) {
+ 			if (weights0[i] > 0) {
+ 				ESS -= weights0[i]* Math.log(weights0[i]);
+ 			}
+ 		}
+ 		ESS = Math.exp(ESS);
+ 		
+ 		Log.warning("Max ESS: " + ESS);
+
 		// produce posterior samples
 		Log.warning("Producing posterior samples");
 		NSLogger nslogger0 = NSloggers.get(0);
@@ -214,18 +243,11 @@ public class DynamicNestedSampling extends NS {
 				logger.mode == Logger.LOGMODE.autodetect && logger.fileNameInput.get() != null &&
 				logger.loggersInput.get().get(0) instanceof TreeInterface) {
 				
-				NSLogAnalyser.main(new String[]{"-log", nslogger0.fileNameInput.get(),
-						"-tree", logger.fileNameInput.get(),
-						"-out", logger.fileNameInput.get() + ".posterior",
-						"-N", particleCount+"",
-						"-quiet"});
+				NSLogAnalyser.resampleToFile(true, nslogger0.fileNameInput.get(), ESS, weights0, order0);
 			}
 		}
 		for (NSLogger nslogger : NSloggers) {
-			NSLogAnalyser.main(new String[]{"-log", nslogger.fileNameInput.get(),
-					"-out", nslogger.fileNameInput.get() + ".posterior",
-					"-N", particleCount+"",
-					"-quiet"});
+			NSLogAnalyser.resampleToFile(false, nslogger0.fileNameInput.get(), ESS, weights0, order0);
 		}
 		
 
@@ -288,10 +310,12 @@ public class DynamicNestedSampling extends NS {
 			n0 = new int[likelihoods.size()];
 			L0 = new double[likelihoods.size()];
 			states0 = new String[likelihoods.size()];
+			order0 = new int[likelihoods.size()];
 			for (int i = 0; i < likelihoods.size(); i++) {
 				n0[i] = particleCount; 
 				L0[i] = likelihoods.get(i);
 				states0[i] = states.get(i);
+				order0[i] = i;
 			}
 			
 			likelihoods.clear();
@@ -308,7 +332,11 @@ public class DynamicNestedSampling extends NS {
 		L0 = L2;
 		String [] S2 = new String[size + likelihoods.size()];
 		System.arraycopy(states0, 0, S2, 0, size);
-		states0 = S2;
+		states0 = S2;		
+		n2 = new int[size + likelihoods.size()];
+		System.arraycopy(order0, 0, n2, 0, size);
+		order0 = n2;
+
 		
 		// merge follow up runs
 		int start = 0;
@@ -326,6 +354,8 @@ public class DynamicNestedSampling extends NS {
 			System.arraycopy(states0, i, states0, i+1, size - i);
 			states0[i] = states.get(k);
 			System.arraycopy(n0, i, n0, i+1, size - i);
+			System.arraycopy(order0, i, order0, i+1, size - i);
+			order0[i] = size;
 			size++;
 			
 			if (k == start) {
@@ -349,7 +379,7 @@ public class DynamicNestedSampling extends NS {
 		// evidence importance
 		double [] IZ = new double[n0.length];
 		// parameter importance
-		double [] IP = new double[n0.length];
+		weights0 = new double[n0.length];
 		
 //		double logX = 0;
 //		double logX1 = - Math.log(n0[0]);
@@ -383,7 +413,7 @@ public class DynamicNestedSampling extends NS {
  		double hMean = 0, H = 0;
  		final double RESAMPLE_COUNT = 100;
  		Arrays.fill(IZ,  0);
- 		Arrays.fill(IP,  0);
+ 		Arrays.fill(weights0,  0);
  		
  		for (int k = 0; k < RESAMPLE_COUNT; k++) {
  			double logX = 0;
@@ -394,7 +424,7 @@ public class DynamicNestedSampling extends NS {
 	 			double u = NSLogAnalyser.nextBeta(n0[i], 1.0); 			
 	 			double lw = logX + Math.log(1.0 - u);
 	 			double L = lw  + L0[i];
-	 			IP[i] += L;
+	 			weights0[i] += L;
 	 			Z = NS.logPlus(Z, L);
 	 			IZ[i] += Z;
 	 			// weights[i] += L; 			
@@ -411,9 +441,12 @@ public class DynamicNestedSampling extends NS {
 			v += Z * Z;
 	 		hMean += H;
 		}
-//		for (int i = 0; i < NSLikelihoods.length; i++) {
-//			weights[i] /= RESAMPLE_COUNT;
-//		}
+		for (int i = 0; i < n0.length; i++) {
+			weights0[i] /= RESAMPLE_COUNT;
+		}
+		for (int i = 0; i < n0.length; i++) {
+			IZ[i] /= RESAMPLE_COUNT;
+		}
 		
 		Z = zMean / RESAMPLE_COUNT;
 		v = Math.sqrt(v/RESAMPLE_COUNT-Z*Z);
@@ -435,14 +468,14 @@ public class DynamicNestedSampling extends NS {
 		}
 
 		// IP[n] now contains log(L_iw_i)
-		max = IP[0];
-		for (double d : IP) {
+		max = weights0[0];
+		for (double d : weights0) {
 			if (d > max) {
 				max = d;
 			}
 		}
 		for (int i = 0; i < n0.length; i++) {
-			IP[i] = Math.exp(IP[i] - max);
+			weights0[i] = Math.exp(weights0[i] - max);
 		}
 		
 		double sumZ = 0;
@@ -451,7 +484,7 @@ public class DynamicNestedSampling extends NS {
 		}
 
 		double sumP = 0;
-		for (double d : IP) {
+		for (double d : weights0) {
 			sumP += d;
 		}
 
@@ -459,13 +492,31 @@ public class DynamicNestedSampling extends NS {
 		// importance per point
 		importance = new double[n0.length];
 		for (int i = 0; i < n0.length; i++) {
-			importance[i] = (1-goal) * IZ[i]/sumZ + goal * IP[i]/sumP;
+			importance[i] = (1-g) * IZ[i]/sumZ + g * weights0[i]/sumP;
 		}		
 	}
 
 	// find first point j and last point k with importance of greater than 
 	// some fraction f (we use f=0.9) of the largest importance;
 	private void findFirstLast(int[] startend) {
+		if (goal.equals(Goal.posterior)) {
+			// determine HPD over `fraction` as start & end points
+			int start = 0;
+			int end = importance.length - 1;
+			double sum = 0;
+			while (sum < 1 - fraction) {
+				if (importance[start]*n0[start] <= importance[end]*n0[end]) {
+					sum += importance[start];
+					start++;
+				} else {
+					sum += importance[end];
+					end--;
+				}
+			}
+			startend[0] = start;
+			startend[1] = end;
+			return;
+		}
 		
 		double max = 0;
 		for (double d : importance) {
@@ -481,6 +532,7 @@ public class DynamicNestedSampling extends NS {
 			if (importance[i] > maxFraction) {
 				if (startend[0] == -1) {
 					startend[0]  = i;
+					startend[1] = i;
 				} else {
 					startend[1] = i;
 				}

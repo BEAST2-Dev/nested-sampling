@@ -356,14 +356,14 @@ public class NS extends MCMC {
 				
 				NSLogAnalyser.main(new String[]{"-log", nslogger0.fileNameInput.get(),
 						"-tree", logger.fileNameInput.get(),
-						"-out", logger.fileNameInput.get() + ".posterior",
+						//"-out", logger.fileNameInput.get() + ".posterior",
 						"-N", particleCount+"",
 						"-quiet"});
 			}
 		}
 		for (NSLogger nslogger : NSloggers) {
 			NSLogAnalyser.main(new String[]{"-log", nslogger.fileNameInput.get(),
-					"-out", nslogger.fileNameInput.get() + ".posterior",
+					//"-out", nslogger.fileNameInput.get() + ".posterior",
 					"-N", particleCount+"",
 					"-quiet"});
 		}
@@ -551,10 +551,11 @@ reportLogLikelihoods(posterior, "");
 		//      o the number of samples is less than 2 * Information * #particles (stopFactor = 2 can be changed) OR
 		//      o the relative gain in ML estimate is less than ESPILON
 			while (sampleNr <= chainLength && 
-					(minLikelihood < maxLikelihood || Double.isInfinite(maxLikelihood) && (
-					sampleNr < minSteps ||
-					sampleNr < stopFactor * H * particleCount ||
-					Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH-1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH- 1) % HISTORY_LENGTH]) > EPSILON))) {
+					((!Double.isInfinite(maxLikelihood) && minLikelihood < maxLikelihood) ||  
+					(Double.isInfinite(maxLikelihood) && (
+					  sampleNr < minSteps ||
+					  sampleNr < stopFactor * H * particleCount ||
+					  Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH-1) % HISTORY_LENGTH] - mlHistory[sampleNr % HISTORY_LENGTH])/Math.abs(mlHistory[(sampleNr +HISTORY_LENGTH- 1) % HISTORY_LENGTH]) > EPSILON)))) {
 
 			// find particle with minimum likelihood
 			int iMin = 0;

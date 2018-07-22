@@ -359,14 +359,14 @@ public class NIS extends MCMC {
 				
 				NSLogAnalyser.main(new String[]{"-log", nslogger0.fileNameInput.get(),
 						"-tree", logger.fileNameInput.get(),
-						"-out", logger.fileNameInput.get() + ".posterior",
+						//"-out", logger.fileNameInput.get() + ".posterior",
 						"-N", particleCount+"",
 						"-quiet"});
 			}
 		}
 		for (NSLogger nslogger : NSloggers) {
 			NSLogAnalyser.main(new String[]{"-log", nslogger.fileNameInput.get(),
-					"-out", nslogger.fileNameInput.get() + ".posterior",
+					//"-out", nslogger.fileNameInput.get() + ".posterior",
 					"-N", particleCount+"",
 					"-quiet"});
 		}
