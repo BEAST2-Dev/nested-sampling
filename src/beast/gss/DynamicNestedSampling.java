@@ -32,7 +32,7 @@ public class DynamicNestedSampling extends NS {
 	public Input<Double> gInput = new Input<>("G", "G-parameter from DNS paper. Ignored unless goal=\"mixture\". "
 			+ "Determines whether more particles are drawn to get accurate "
 			+ "evidence/marginal likelihood estimate (goal=0.0) or more accurate posterior sample (goal=1.0)", 1.0);
-	public Input<Double> fractionInput = new Input<>("fraction", "fraction of importance to be revisited", 0.99);
+	public Input<Double> fractionInput = new Input<>("fraction", "fraction of importance to be revisited", 0.9999);
 	public Input<Double> targetSDInput = new Input<>("targetSD", "target standard deviation for the marginal likelihood/evidence", 3.0);
 	
 	
@@ -294,6 +294,9 @@ public class DynamicNestedSampling extends NS {
 			}
 			maxLikelihood = k+1 < L0.length ? L0[k + 1] : Double.POSITIVE_INFINITY;
 			
+			Log.err("minL = " + minLikelihood + " maxL = " + maxLikelihood);
+
+			
 //			and ending with the first sample taken with likelihood greater than L_{k+1};
 			doInnerLoop();
 			updateLikelihoodsAndN();
@@ -502,19 +505,30 @@ public class DynamicNestedSampling extends NS {
 		if (goal.equals(Goal.posterior)) {
 			// determine HPD over `fraction` as start & end points
 			int start = 0;
-			int end = importance.length - 1;
+			int end = weights0.length - 1;
 			double sum = 0;
 			while (sum < 1 - fraction) {
-				if (importance[start]*n0[start] <= importance[end]*n0[end]) {
-					sum += importance[start];
+				if (weights0[start]*n0[start] <= weights0[end]*n0[end]) {
+					sum += weights0[start];
 					start++;
 				} else {
-					sum += importance[end];
+					sum += weights0[end];
 					end--;
 				}
 			}
 			startend[0] = start;
 			startend[1] = end;
+			return;
+		}
+		
+		if (goal.equals(Goal.evidence)) {
+			startend[0] = 0;
+			double maxFraction = importance[0] * fraction;
+			for (int i = importance.length - 1; i > 0; i--) {
+				if (importance[i] > maxFraction) {
+					startend[1] = i;
+				}
+			}
 			return;
 		}
 		

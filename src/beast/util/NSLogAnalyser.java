@@ -95,6 +95,9 @@ public class NSLogAnalyser extends LogAnalyser {
     	}
     	// calc marginal likelihood Z
     	Double [] NSLikelihoods = m_fTraces[1];
+
+    	// Arrays.sort(NSLikelihoods);
+    	
 		// Z = \sum_i Li*wi
  		double Z = 0;
 		Z = -Double.MAX_VALUE;
@@ -288,6 +291,41 @@ public class NSLogAnalyser extends LogAnalyser {
 			entryCount[Randomizer.randomChoicePDF(weights)]++;
 		}
 		
+		writeFile(out, entryCount, m_sLabels, m_fTraces, treeFile);
+		
+		Log.warning("Log file written to " + outFile);
+	}
+	
+	
+	public static void resampleToFile(boolean isTreeFile, String inFile, double ESS, double [] weights, int [] order) throws IOException {
+		double [] orderedWeights = new double[weights.length];
+		if (order == null) {
+			for (int i = 0; i < weights.length; i++) {
+				orderedWeights[i] = weights[i];
+			}
+		} else {
+			for (int i = 0; i < weights.length; i++) {
+				orderedWeights[order[i]] = weights[i];
+			}
+		}
+				
+		LogAnalyser traceFile = new LogAnalyser(inFile, 0, true, false);
+		
+		int d = inFile.lastIndexOf('.');
+		String outFile = d < 0 ? inFile +".posterior" : inFile.substring(0, d) + ".posterior" + inFile.substring(d);
+		PrintStream out = new PrintStream(new File(outFile));
+		int [] entryCount = new int[weights.length];
+		for (int i = 0; i < ESS; i++) {
+			entryCount[Randomizer.randomChoicePDF(orderedWeights)]++;
+		}
+		
+		writeFile(out, entryCount, traceFile.m_sLabels, traceFile.m_fTraces, isTreeFile ? inFile : null);
+
+		Log.warning("Log file written to " + outFile);
+	}
+	
+	static void writeFile(PrintStream out, int [] entryCount, String [] m_sLabels, Double [][] m_fTraces, String treeFile) throws IOException {
+
 		if (treeFile == null) {
 			// resample to log file
 			
@@ -334,15 +372,17 @@ public class NSLogAnalyser extends LogAnalyser {
 				j++;
 			}
 			tree.close(out);
-			if (j < weights.length) {
+			if (j < entryCount.length) {
 				throw new IllegalArgumentException("There are fewer trees in the tree set than there are samples in the log file");
 			}
 			
 		}
 		out.close();
-		Log.warning("Log file written to " + outFile);
 	}
 
+	
+
+	
 	private Double[] newDouble(int items) {
 		Double [] array = new Double[items];
 		Arrays.fill(array, Double.NaN);
@@ -463,6 +503,11 @@ public class NSLogAnalyser extends LogAnalyser {
         			files.add(arg);
         			i++;
         		}
+        	}
+        	if (outFile == null) {
+        		String inFile = treeFiles.size() == 0 ? files.get(0) : treeFiles.get(0);
+        		int d = inFile.lastIndexOf('.');        		
+        		outFile = d < 0 ? inFile +".posterior" : inFile.substring(0, d) + ".posterior" + inFile.substring(d);
         	}
         	if (files.size() == 0) {
         		// no file specified, open file dialog to select one
