@@ -389,6 +389,7 @@ public class NS extends MCMC {
 
 		for (int i = 0; i < particleCount; i++) {
 			minLikelihood = minLikelihood0;
+			minPseudoLikelihood = minLikelihood0;
 
 			if (!restoreFromFile) {
 				if (startState != null) {
@@ -452,6 +453,7 @@ reportLogLikelihoods(posterior, "");
 
 		// sample from prior
 		minLikelihood = Double.NEGATIVE_INFINITY; // guarantee that likelihood is ignored when sampling from prior
+		minPseudoLikelihood = Double.NEGATIVE_INFINITY;
 		for (int sampleNr = -burnIn; sampleNr < 0; sampleNr++) {
 			// find particle with minimum likelihood
 			int iMin = Randomizer.nextInt(particleCount);
@@ -551,7 +553,7 @@ reportLogLikelihoods(posterior, "");
 		//      o the number of samples is less than 2 * Information * #particles (stopFactor = 2 can be changed) OR
 		//      o the relative gain in ML estimate is less than ESPILON
 			while (sampleNr <= chainLength && 
-					((!Double.isInfinite(maxLikelihood) && minLikelihood < maxLikelihood) ||  
+					((!Double.isInfinite(maxLikelihood) && minPseudoLikelihood < maxLikelihood) ||  
 					(Double.isInfinite(maxLikelihood) && (
 					  sampleNr < minSteps ||
 					  sampleNr < stopFactor * H * particleCount ||
@@ -562,7 +564,7 @@ reportLogLikelihoods(posterior, "");
 			minLikelihood = particleLikelihoods[0];
 			minPseudoLikelihood = particlePseudoLikelihoods[0];
 			for (int i = 1; i < particleCount; i++) {
-				if (particleLikelihoods[i] < minLikelihood) {
+				if (particlePseudoLikelihoods[i] < minPseudoLikelihood) {
 					minLikelihood = particleLikelihoods[i];
 					minPseudoLikelihood = particlePseudoLikelihoods[i];
 					iMin = i;

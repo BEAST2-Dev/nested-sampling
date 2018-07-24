@@ -204,7 +204,7 @@ public class DynamicNestedSampling extends NS {
 
 		
 		Log.info.println();
-			operatorSchedule.showOperatorRates(System.out);
+		operatorSchedule.showOperatorRates(System.out);
 
 		Log.info.println();
 		final long endTime = System.currentTimeMillis();
@@ -416,7 +416,7 @@ public class DynamicNestedSampling extends NS {
  		double zMean = 0;
  		double v = 0;
  		double hMean = 0, H = 0;
- 		final double RESAMPLE_COUNT = 100;
+ 		final double RESAMPLE_COUNT = 1000;
  		Arrays.fill(IZ,  0);
  		Arrays.fill(weights0,  0);
  		
@@ -529,9 +529,9 @@ public class DynamicNestedSampling extends NS {
 			for (int i = importance.length - 1; i > 0; i--) {
 				if (importance[i] > maxFraction) {
 					startend[1] = i;
+					return;
 				}
 			}
-			return;
 		}
 		
 		double max = 0;
