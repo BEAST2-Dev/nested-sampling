@@ -33,7 +33,7 @@ public class DynamicNestedSampling extends NS {
 			+ "Determines whether more particles are drawn to get accurate "
 			+ "evidence/marginal likelihood estimate (goal=0.0) or more accurate posterior sample (goal=1.0)", 1.0);
 	public Input<Double> fractionInput = new Input<>("fraction", "fraction of importance to be revisited", 0.9999);
-	public Input<Double> targetSDInput = new Input<>("targetSD", "target standard deviation for the marginal likelihood/evidence", 3.0);
+	public Input<Double> targetSDInput = new Input<>("targetSD", "target standard deviation for the marginal likelihood/evidence", 1.0);
 	
 	
 	private Goal goal;
@@ -233,6 +233,8 @@ public class DynamicNestedSampling extends NS {
  		}
  		ESS = Math.exp(ESS);
  		
+ 		ESS = Math.min(ESS, weights0.length);
+ 		
  		Log.warning("Max ESS: " + ESS);
 
 		// produce posterior samples
@@ -243,7 +245,7 @@ public class DynamicNestedSampling extends NS {
 				logger.mode == Logger.LOGMODE.autodetect && logger.fileNameInput.get() != null &&
 				logger.loggersInput.get().get(0) instanceof TreeInterface) {
 				
-				NSLogAnalyser.resampleToFile(true, nslogger0.fileNameInput.get(), ESS, weights0, order0);
+				NSLogAnalyser.resampleToFile(true, logger.fileNameInput.get(), ESS, weights0, order0);
 			}
 		}
 		for (NSLogger nslogger : NSloggers) {

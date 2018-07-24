@@ -578,12 +578,14 @@ reportLogLikelihoods(posterior, "");
 			//reportLogLikelihoods(posterior, "");
 			
 			
-			for (Logger logger: NSloggers) {
-				if (logger instanceof NSLogger) {
-					((NSLogger) logger).log(sampleNr, minPseudoLikelihood);
+			if (sampleNr > 0) {
+				for (Logger logger: NSloggers) {
+					if (logger instanceof NSLogger) {
+						((NSLogger) logger).log(sampleNr - 1, minPseudoLikelihood);
+					}
 				}
+				log(sampleNr - 1);
 			}
-			log(sampleNr);
 
 			// mean(theta) = \sum_i theta * Li*wi/Z
 			// Z = \sum_i Li*wi
