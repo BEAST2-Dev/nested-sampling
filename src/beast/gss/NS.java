@@ -66,8 +66,11 @@ public class NS extends MCMC {
 
 	public Input<Boolean> autoSubChainLengthInput = new Input<>("autoSubChainLength", "automatically determines subchain length based on number of accepted steps (unless subChainLength * paramCount is reached)", true);
 	public Input<Double> paramCountFactorInput = new Input<>("paramCountFactor", "determines length of subchain as multiplier of accepted steps before returning divided by number of parameters in the analysis"
-			+ "ignored if autoSubChainLengt=false", 1.0);
+			+ "ignored if autoSubChainLengt=false", 10.0);
+	
+	public Input<Boolean> producePosteriorInput = new Input<>("producePosterior", "if true, a posterior sample is produced from the NS run", true);
 
+	
 	private static final boolean printDebugInfo = false;
 
 	protected int particleCount;
@@ -347,25 +350,27 @@ public class NS extends MCMC {
 		}
 
 		// produce posterior samples
-		Log.warning("Producing posterior samples");
-		NSLogger nslogger0 = NSloggers.get(0);
-		for (Logger logger : loggers) {
-			if (logger.mode == Logger.LOGMODE.tree ||
-				logger.mode == Logger.LOGMODE.autodetect && logger.fileNameInput.get() != null &&
-				logger.loggersInput.get().get(0) instanceof TreeInterface) {
-				
-				NSLogAnalyser.main(new String[]{"-log", nslogger0.fileNameInput.get(),
-						"-tree", logger.fileNameInput.get(),
-						//"-out", logger.fileNameInput.get() + ".posterior",
+		if (producePosteriorInput.get()) {
+			Log.warning("Producing posterior samples");
+			NSLogger nslogger0 = NSloggers.get(0);
+			for (Logger logger : loggers) {
+				if (logger.mode == Logger.LOGMODE.tree ||
+					logger.mode == Logger.LOGMODE.autodetect && logger.fileNameInput.get() != null &&
+					logger.loggersInput.get().get(0) instanceof TreeInterface) {
+					
+					NSLogAnalyser.main(new String[]{"-log", nslogger0.fileNameInput.get(),
+							"-tree", logger.fileNameInput.get(),
+							//"-out", logger.fileNameInput.get() + ".posterior",
+							"-N", particleCount+"",
+							"-quiet"});
+				}
+			}
+			for (NSLogger nslogger : NSloggers) {
+				NSLogAnalyser.main(new String[]{"-log", nslogger.fileNameInput.get(),
+						//"-out", nslogger.fileNameInput.get() + ".posterior",
 						"-N", particleCount+"",
 						"-quiet"});
 			}
-		}
-		for (NSLogger nslogger : NSloggers) {
-			NSLogAnalyser.main(new String[]{"-log", nslogger.fileNameInput.get(),
-					//"-out", nslogger.fileNameInput.get() + ".posterior",
-					"-N", particleCount+"",
-					"-quiet"});
 		}
 		
 
@@ -402,7 +407,7 @@ public class NS extends MCMC {
 				oldLogPrior = state.robustlyCalcPosterior(posterior);
 			}
 			
-			Log.info.println("Start likelihood: " + oldLogPrior + " ");
+			Log.info.println("Start likelihood " + i + ": "+ oldLogPrior + " ");
 					// + (initialisationAttempts > 1 ? "after " + initialisationAttempts + " initialisation attempts" : ""));
 			if (Double.isInfinite(oldLogPrior) || Double.isNaN(oldLogPrior)) {
 				reportLogLikelihoods(posterior, "");
@@ -840,5 +845,9 @@ reportLogLikelihoods(posterior, "");
 				System.err.print(" direct reject");
 		}
 		return accept;
+	}
+	
+	public double getEvidence() {
+		return Z;
 	}
 }

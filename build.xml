@@ -168,6 +168,7 @@
 				<fileset dir="${srcBeast2}">
                     <include name="test/beast/integration/**/*Test.java"/>                                         
                     <exclude name="test/beast/integration/**/ResumeTest.java"/>                                         
+                    <exclude name="test/beast/integration/ExampleXmlParsingTest.java"/>                                         
 				</fileset>
 			</batchtest>
 		</junit>
