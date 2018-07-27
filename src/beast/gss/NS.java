@@ -64,7 +64,7 @@ public class NS extends MCMC {
 	public Input<Double> stopFactorInput = new Input<>("stopFactor", "stopping criterion: use at least stopfactor * Information * particleCount steps", 2.0);
 	public Input<Integer> minStepsInput = new Input<>("minSteps", "minimal number of steps to take. Useful to guarantee chain does not get stuck in prior", 0);
 
-	public Input<Boolean> autoSubChainLengthInput = new Input<>("autoSubChainLength", "automatically determines subchain length based on number of accepted steps (unless subChainLength * paramCount is reached)", true);
+	public Input<Boolean> autoSubChainLengthInput = new Input<>("autoSubChainLength", "automatically determines subchain length based on number of accepted steps (unless subChainLength * paramCount is reached)", false);
 	public Input<Double> paramCountFactorInput = new Input<>("paramCountFactor", "determines length of subchain as multiplier of accepted steps before returning divided by number of parameters in the analysis"
 			+ "ignored if autoSubChainLengt=false", 10.0);
 	
@@ -228,7 +228,7 @@ public class NS extends MCMC {
 
 		burnIn = burnInInput.get();
 		chainLength = chainLengthInput.get();
-		int initialisationAttempts = 0;
+		//int initialisationAttempts = 0;
 		state.setEverythingDirty(true);
 		posterior = posteriorInput.get();
 
@@ -553,6 +553,10 @@ reportLogLikelihoods(posterior, "");
 		double [] mlHistory = new double[HISTORY_LENGTH];
 		mlHistory[0] = -1.0; // to pass stop criterion when sampleNr = 0
 		int sampleNr = 0;
+		
+		double [] startL = new double[particleCount];
+		System.arraycopy(particlePseudoLikelihoods, 0, startL, 0, particleCount);
+		
 		// continue while
 		// o we have not reached a user specified upper bound of steps (through chainLength) AND
 		//      o the number of samples is less than 2 * Information * #particles (stopFactor = 2 can be changed) OR
@@ -609,10 +613,10 @@ reportLogLikelihoods(posterior, "");
 				lw = logW - (sampleNr - 1.0) / N;
 				double Li = minPseudoLikelihood;
 //				Li = minLikelihood;
+				likelihoods.add(Li);
 //				if (originalPrior != null) {
 //					Li += originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP(); 
 //				}
-				likelihoods.add(Li);
 				if (states != null) {
 					states.add(state.toXML(sampleNr));
 				}
@@ -657,23 +661,91 @@ reportLogLikelihoods(posterior, "");
 			
 		Log.info("Finished in " + sampleNr + " steps!");
 		
-		if (System.getProperty("beast.debug") != null) { 
+		if (System.getProperty("beast.debug") != null) {
+			double Z2 = estimateZ(likelihoods, N);
 			Log.warning(Arrays.toString(mlHistory));
 			Log.warning("("+mlHistory[sampleNr % HISTORY_LENGTH] +"-"+ mlHistory[(sampleNr +1 )% HISTORY_LENGTH]+")/"+mlHistory[sampleNr % HISTORY_LENGTH] +">"+ EPSILON);
-			
-			double m = likelihoods.get(likelihoods.size()-1);
-	 		double Z2 = 0;
-	 		for (int i = 0; i < likelihoods.size(); i++) {
-	 			double Xi = Math.exp(-i/N);
-	 			double Xi_1 = Math.exp(-(i-1.0)/N);
-	 			double wi = Xi_1 - Xi;
-	 			Z2 += wi * Math.exp(likelihoods.get(i) - m);
-	 		}
-	 		Z2 = Math.log(Z2) + m;
-	 		
 	 		Log.info("Marginal likelihood: " + Z + " " + Z2);
 		}
+		
+		
+		int RESAMPLE_COUNT = 1000;
+		double zMean = 0, v = 0;		
+		List<Double> [] unraveled = unravel(likelihoods, particleCount, startL);
+		double [] Zs = new double[RESAMPLE_COUNT];
+		for (int k = 0; k < RESAMPLE_COUNT; k++) {
+			List<Double> subsample = subsample(unraveled, particleCount);
+			Zs[k] = estimateZ(subsample, N);
+		}
+		for (double d : Zs) {
+			zMean += d;
+		}
+		zMean = zMean / (RESAMPLE_COUNT);
+		for (double d : Zs) {
+			v += (d - zMean) * (d - zMean);
+		}
+		v = Math.sqrt(v/(RESAMPLE_COUNT - 1));
+ 		Log.info("Marginal likelihood: " + zMean + " (bootstrap SD=" + v + ")");
+
+		
 		finished = true;
+	}
+
+	private List<Double> subsample(List<Double>[] unraveled, int N) {
+		List<Double> merged = new ArrayList<>();
+		for (int i = 0; i < N; i++) {
+			merged.addAll(unraveled[Randomizer.nextInt(N)]);
+		}
+		Collections.sort(merged);
+		return merged;
+	}
+
+	private List<Double>[] unravel(List<Double> likelihoods, int N, double [] startL) {
+		List<Double> [] unraveled = new List[N];
+		
+		for (int i = 0; i < N; i++) {
+			unraveled[i] = new ArrayList<>();
+			unraveled[i].add(startL[i]);
+		}
+		
+		boolean [] tabu = new boolean[likelihoods.size()];
+		for (int i = 0; i < N; i++) {
+			int j = Collections.binarySearch(likelihoods, startL[i]);
+			if (j >= 0) {
+				tabu[j] = true;
+			}
+		}
+
+		for (int i = 0; i < likelihoods.size(); i++) {
+			if (!tabu[i]) {
+				int iMin = -1;
+				double minL = Double.POSITIVE_INFINITY;
+				for (int j = 0; j < N; j++) {
+					// d is last item of list
+					double d = unraveled[j].get(unraveled[j].size()-1);
+					if (d < minL) {
+						minL = d;
+						iMin = j;
+					}
+				}
+				// iMin = Randomizer.nextInt(N);
+				unraveled[iMin].add(likelihoods.get(i));
+			}
+		}
+		return unraveled;
+	}
+
+	private double estimateZ(List<Double> likelihoods, double N) {
+		double m = likelihoods.get(likelihoods.size()-1);
+ 		double Z2 = 0;
+ 		for (int i = 0; i < likelihoods.size(); i++) {
+ 			double Xi = Math.exp(-i/N);
+ 			double Xi_1 = Math.exp(-(i-1.0)/N);
+ 			double wi = Xi_1 - Xi;
+ 			Z2 += wi * Math.exp(likelihoods.get(i) - m);
+ 		}
+ 		Z2 = Math.log(Z2) + m;
+		return Z2;
 	}
 
 	protected void updateParticleState(int iMin, String state, double likelihood, double pseudoLikelihood) {
@@ -705,7 +777,7 @@ reportLogLikelihoods(posterior, "");
 		if (autoSubChainLength) {
 			int acceptCount = 0;
 			int j = 0;
-			while (acceptCount < paramCount * paramCountFactor && j < paramCount * subChainLength) {
+			while (acceptCount < paramCount * paramCountFactor && j < subChainLength) {
 				boolean accept = composeProposal(j + subChainLength * sampleNr);
 				if (accept) {
 					acceptCount++;
