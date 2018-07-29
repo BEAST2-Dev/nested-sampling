@@ -669,13 +669,18 @@ reportLogLikelihoods(posterior, "");
 		}
 		
 		
-		int RESAMPLE_COUNT = 1000;
+		printBootStrapEstimate(startL, N);
+		printSubSampleEstimate(N);
+		finished = true;
+	}
+	final int RESAMPLE_COUNT = 1000;
+
+	private void printSubSampleEstimate(double N) {
 		double zMean = 0, v = 0;		
-		List<Double> [] unraveled = unravel(likelihoods, particleCount, startL);
 		double [] Zs = new double[RESAMPLE_COUNT];
 		for (int k = 0; k < RESAMPLE_COUNT; k++) {
-			List<Double> subsample = subsample(unraveled, particleCount);
-			Zs[k] = estimateZ(subsample, N);
+			List<Double> subsample = subsampleLikelihoods();
+			Zs[k] = estimateZRandomised(subsample, N);
 		}
 		for (double d : Zs) {
 			zMean += d;
@@ -685,12 +690,46 @@ reportLogLikelihoods(posterior, "");
 			v += (d - zMean) * (d - zMean);
 		}
 		v = Math.sqrt(v/(RESAMPLE_COUNT - 1));
- 		Log.info("Marginal likelihood: " + zMean + " (bootstrap SD=" + v + ")");
-
-		
-		finished = true;
+ 		Log.info("Marginal likelihood: " + zMean + " (subsample SD=" + v + ")");		
 	}
 
+	private List<Double> subsampleLikelihoods() {
+		List<Double> subsample = new ArrayList<>();
+		int n = likelihoods.size();
+		for (int i = 0; i < n; i++) {
+			subsample.add(likelihoods.get(Randomizer.nextInt(n)));
+		}
+		Collections.sort(subsample);
+		return subsample;
+	}
+
+	/**
+	 * Bootstrap sampling error calculation
+	 * Algorithm 2 in https://arxiv.org/pdf/1703.09701.pdf
+	 **/
+	private void printBootStrapEstimate(double [] startL, double N) {
+		double zMean = 0, v = 0;		
+		List<Double> [] unraveled = unravel(likelihoods, particleCount, startL);
+		double [] Zs = new double[RESAMPLE_COUNT];
+		for (int k = 0; k < RESAMPLE_COUNT; k++) {
+			List<Double> subsample = subsample(unraveled, particleCount);
+			Zs[k] = estimateZRandomised(subsample, N);
+		}
+		for (double d : Zs) {
+			zMean += d;
+		}
+		zMean = zMean / (RESAMPLE_COUNT);
+		for (double d : Zs) {
+			v += (d - zMean) * (d - zMean);
+		}
+		v = Math.sqrt(v/(RESAMPLE_COUNT - 1));
+ 		Log.info("Marginal likelihood: " + zMean + " (bootstrap SD=" + v + ")");		
+	}
+
+	/** 
+	 * subsample unraveled NS runs with replacement 
+	 * return sorted NS run for N particles 
+	 * **/
 	private List<Double> subsample(List<Double>[] unraveled, int N) {
 		List<Double> merged = new ArrayList<>();
 		for (int i = 0; i < N; i++) {
@@ -700,6 +739,10 @@ reportLogLikelihoods(posterior, "");
 		return merged;
 	}
 
+	/** 
+	 * Split list into N sub-lists, each representing a single run
+	 * Algorithm 1 in https://arxiv.org/pdf/1703.09701.pdf
+	 */
 	private List<Double>[] unravel(List<Double> likelihoods, int N, double [] startL) {
 		List<Double> [] unraveled = new List[N];
 		
@@ -735,6 +778,12 @@ reportLogLikelihoods(posterior, "");
 		return unraveled;
 	}
 
+	/** 
+	 * Estimate evidence using expected weights
+	 * @param likelihoods -- dead points for NS run
+	 * @param N -- number of active points
+	 * @return estimated of evidence
+	 */
 	private double estimateZ(List<Double> likelihoods, double N) {
 		double m = likelihoods.get(likelihoods.size()-1);
  		double Z2 = 0;
@@ -748,6 +797,27 @@ reportLogLikelihoods(posterior, "");
 		return Z2;
 	}
 
+	/** 
+	 * Estimate evidence using randomised weights
+	 * @param likelihoods -- dead points for NS run
+	 * @param N -- number of active points
+	 * @return estimated of evidence
+	 */
+	private double estimateZRandomised(List<Double> likelihoods, double N) {
+	 	double logX = 0.0;
+ 		double Z = 0;
+		Z = -Double.MAX_VALUE;
+ 		for (int i = 0; i < likelihoods.size(); i++) {
+ 			double u = NSLogAnalyser.nextBeta(N, 1.0); 			
+ 			double lw = logX + Math.log(1.0 - u);
+ 			double L = lw  + likelihoods.get(i);
+ 			Z = NS.logPlus(Z, L);
+ 			logX += Math.log(u);
+ 		}
+ 		return Z;
+	}
+
+	
 	protected void updateParticleState(int iMin, String state, double likelihood, double pseudoLikelihood) {
 		particleStates[iMin] = state;
 		particleLikelihoods[iMin] = likelihood;
