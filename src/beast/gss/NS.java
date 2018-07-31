@@ -589,13 +589,13 @@ reportLogLikelihoods(posterior, "");
 			//reportLogLikelihoods(posterior, "");
 			
 			
-			if (sampleNr > 0) {
+			if (sampleNr >= 0) {
 				for (Logger logger: NSloggers) {
 					if (logger instanceof NSLogger) {
-						((NSLogger) logger).log(sampleNr - 1, minPseudoLikelihood);
+						((NSLogger) logger).log(sampleNr, minPseudoLikelihood);
 					}
 				}
-				log(sampleNr - 1);
+				log(sampleNr);
 			}
 
 			// mean(theta) = \sum_i theta * Li*wi/Z
@@ -603,14 +603,14 @@ reportLogLikelihoods(posterior, "");
 			
 			updateParticle(sampleNr);
 			
-			if (sampleNr > 0) {
+			if (sampleNr >= 0) {
 //				double Xi = Math.exp(-sampleNr/N);
 //				double Xi_1 = Math.exp(-(sampleNr-1.0)/N);
 //				double wi = Xi_1 - Xi;
 				//delta = Li * wi; 
 				//Z  += delta;
 
-				lw = logW - (sampleNr - 1.0) / N;
+				lw = logW - (sampleNr - 1.0 + 1.0) / N;
 				double Li = minPseudoLikelihood;
 //				Li = minLikelihood;
 				likelihoods.add(Li);
