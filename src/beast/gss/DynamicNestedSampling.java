@@ -33,7 +33,8 @@ public class DynamicNestedSampling extends NS {
 			+ "Determines whether more particles are drawn to get accurate "
 			+ "evidence/marginal likelihood estimate (goal=0.0) or more accurate posterior sample (goal=1.0)", 1.0);
 	public Input<Double> fractionInput = new Input<>("fraction", "fraction of importance to be revisited", 0.9999);
-	public Input<Double> targetSDInput = new Input<>("targetSD", "target standard deviation for the marginal likelihood/evidence", 1.0);
+	public Input<Double> targetSDInput = new Input<>("targetSD", "target standard deviation for the marginal likelihood/evidence. May be ignored if repeats are specified", 1.0);
+	public Input<Integer> repeatsInput = new Input<>("repeats", "if >0, use this many repeats. If =<0, use targetSD", -1);
 	
 	
 	private Goal goal;
@@ -45,6 +46,7 @@ public class DynamicNestedSampling extends NS {
 	private double [] weights0;
 	private int [] order0;
 	private double evidenceSD, targetSD;
+	private int repeats;
 
 
 	public DynamicNestedSampling() {
@@ -69,6 +71,7 @@ public class DynamicNestedSampling extends NS {
 			throw new IllegalArgumentException("fraction should be between 0 and 1, not " + fractionInput.get());
 		}
 		fraction = fractionInput.get();
+		repeats = repeatsInput.get();
 		
 		goal = goalInput.get();
 		switch (goal) {
@@ -273,12 +276,18 @@ public class DynamicNestedSampling extends NS {
 
 		restoreFromFile = false;
 
+		int loopCount = 0;
 		while (true) {
 //			recalculate importance I(G,i) of all points;
-			calcImportancePerPoint();
+			calcImportancePerPoint(1000);
 
 //			if (dynamic termination condition not satisfied) return
-			if (evidenceSD < targetSD) {
+			
+			if (repeats > 0) {
+				if (loopCount >= repeats) {
+					return;
+				}
+			} else if (evidenceSD < targetSD) {
 				return;
 			}
 			
@@ -302,6 +311,7 @@ public class DynamicNestedSampling extends NS {
 //			and ending with the first sample taken with likelihood greater than L_{k+1};
 			doInnerLoop();
 			updateLikelihoodsAndN();
+			loopCount++;
 		}		
 //		end
 	}
@@ -378,7 +388,7 @@ public class DynamicNestedSampling extends NS {
 	}
 	
 	
-	private void calcImportancePerPoint() {
+	private void calcImportancePerPoint(double RESAMPLE_COUNT) {
 		double Z = -Double.MAX_VALUE; 
 
 		// evidence importance
@@ -416,7 +426,7 @@ public class DynamicNestedSampling extends NS {
  		double zMean = 0;
  		double v = 0;
  		double hMean = 0, H = 0;
- 		final double RESAMPLE_COUNT = 1000;
+ 		
  		Arrays.fill(IZ,  0);
  		Arrays.fill(weights0,  0);
  		
