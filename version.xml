@@ -1,4 +1,4 @@
-<package name='NS' version='1.0.0'>
+<package name='NS' version='1.0.1'>
 	<depends on='beast2' atleast='2.5.0'/>
 	<depends on='BEASTLabs' atleast='1.8.0'/>
 	<depends on='MODEL_SELECTION' atleast='1.4.1'/>

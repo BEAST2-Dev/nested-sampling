@@ -1,6 +1,7 @@
 package beast.gss;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,6 +12,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
+import beast.app.beauti.Beauti;
 import beast.core.Citation;
 import beast.core.Description;
 import beast.core.Distribution;
@@ -353,27 +355,39 @@ public class NS extends MCMC {
 		if (producePosteriorInput.get()) {
 			Log.warning("Producing posterior samples");
 			NSLogger nslogger0 = NSloggers.get(0);
+	        String fileSep = System.getProperty("file.separator");
+	        if (fileSep.equals("\\")) {
+	            fileSep = "\\\\";
+	        }
 			for (Logger logger : loggers) {
 				if (logger.mode == Logger.LOGMODE.tree ||
 					logger.mode == Logger.LOGMODE.autodetect && logger.fileNameInput.get() != null &&
 					logger.loggersInput.get().get(0) instanceof TreeInterface) {
 					
-					NSLogAnalyser.main(new String[]{"-log", nslogger0.fileNameInput.get(),
-							"-tree", logger.fileNameInput.get(),
+					String traceLog = nslogger0.fileNameInput.get();
+					String treeLog = logger.fileNameInput.get();
+		            if (System.getProperty("file.name.prefix") != null) {
+		            	traceLog = System.getProperty("file.name.prefix") + traceLog;
+		            	treeLog = System.getProperty("file.name.prefix") + treeLog;
+		            }
+					NSLogAnalyser.main(new String[]{"-log", traceLog,
+							"-tree", treeLog,
 							//"-out", logger.fileNameInput.get() + ".posterior",
 							"-N", particleCount+"",
 							"-quiet"});
 				}
 			}
 			for (NSLogger nslogger : NSloggers) {
-				NSLogAnalyser.main(new String[]{"-log", nslogger.fileNameInput.get(),
+				String traceLog = nslogger0.fileNameInput.get();
+	            if (System.getProperty("file.name.prefix") != null) {
+	            	traceLog = System.getProperty("file.name.prefix") + traceLog;
+	            }
+				NSLogAnalyser.main(new String[]{"-log", traceLog,
 						//"-out", nslogger.fileNameInput.get() + ".posterior",
 						"-N", particleCount+"",
 						"-quiet"});
 			}
 		}
-		
-
 	} // run;
 
 	protected NSLogger replaceLogger(Logger logger) {
