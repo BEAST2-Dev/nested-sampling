@@ -284,6 +284,28 @@ public class NSLogAnalyser extends LogAnalyser {
     } // calcStats
 
 
+	/** 
+	 * Estimate evidence using randomised weights
+	 * @param likelihoods -- dead points for NS run
+	 * @param N -- number of active points
+	 * @return estimated of evidence
+	 */
+	static public double estimateZRandomised(List<Double> likelihoods, double N) {
+	 	double logX = 0.0;
+ 		double Z = 0;
+		Z = -Double.MAX_VALUE;
+ 		for (int i = 0; i < likelihoods.size(); i++) {
+ 			double u = NSLogAnalyser.nextBeta(N, 1.0); 			
+ 			double lw = logX + Math.log(1.0 - u);
+ 			double L = lw  + likelihoods.get(i);
+ 			Z = NS.logPlus(Z, L);
+ 			logX += Math.log(u);
+ 		}
+ 		return Z;
+	}
+    
+    
+    
 	private void resampleToFile() throws IOException {
 		PrintStream out = new PrintStream(new File(outFile));
 		int [] entryCount = new int[weights.length];
@@ -436,6 +458,7 @@ public class NSLogAnalyser extends LogAnalyser {
         	System.out.println("-help");
         	System.out.println("--help");
         	System.out.println("-h print this message");
+        	System.out.println("-noposterior do not produce posterior (the default behaviour)");
         	System.out.println("[fileX] log file to analyse. Multiple files are allowed, each is analysed separately");
         	System.exit(0);
 	}
@@ -450,6 +473,7 @@ public class NSLogAnalyser extends LogAnalyser {
         	List<String> treeFiles = new ArrayList<>();
         	String outFile = null;
         	List<Integer> N = new ArrayList<>();
+			boolean producePosterior = true;
         	int i = 0;
         	while (i < args.length) {
         		String arg = args[i];
@@ -495,6 +519,10 @@ public class NSLogAnalyser extends LogAnalyser {
         		case "--help":
         			NSLogAnalyser.printUsageAndExit();
         			break;
+        		case "-noposterior":
+        			producePosterior = false;
+        			i++;
+        			break;
         		default:
         			if (arg.startsWith("-")) {
         				Log.warning.println("unrecognised command " + arg);
@@ -504,7 +532,7 @@ public class NSLogAnalyser extends LogAnalyser {
         			i++;
         		}
         	}
-        	if (outFile == null) {
+        	if (outFile == null && producePosterior) {
         		String inFile = treeFiles.size() == 0 ? files.get(0) : treeFiles.get(0);
         		int d = inFile.lastIndexOf('.');        		
         		outFile = d < 0 ? inFile +".posterior" : inFile.substring(0, d) + ".posterior" + inFile.substring(d);
