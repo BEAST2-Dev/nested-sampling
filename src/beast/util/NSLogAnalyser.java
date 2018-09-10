@@ -379,7 +379,7 @@ public class NSLogAnalyser extends LogAnalyser {
 			tree.init(out);
 			out.println();
 			treeset.reset();
-	        int sampleNr = 0;
+	        long sampleNr = 0;
 	        int j = 0;
 			while (treeset.hasNext()) {
 				tree = treeset.next();
@@ -387,7 +387,12 @@ public class NSLogAnalyser extends LogAnalyser {
 					throw new IllegalArgumentException("There are more trees in the tree set than there are samples in the log file");
 				}
 	        	for (int k = 0; k < entryCount[j]; k++) {
-	        		tree.log(sampleNr, out);
+        	        out.print("tree STATE_" + sampleNr + " = ");
+        	        // print with metadata 
+        	        final String newick = tree.getRoot().toSortedNewick(new int[1], true);
+        	        out.print(newick);
+        	        out.print(";");
+
 			        out.println();
 		        	sampleNr++;
 	        	}
