@@ -436,7 +436,7 @@ public class NS extends MCMC {
 			for (int j = 0; j < subChainLength; j++) {
 				composeProposal(1);
 			}
-reportLogLikelihoods(posterior, "");
+//reportLogLikelihoods(posterior, "");
 			if (originalPrior != null) {
 				updateParticleState(i, state.toXML(0), likelihood.getArrayValue(),
 						likelihood.getArrayValue() + originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP()); 
