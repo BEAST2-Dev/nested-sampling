@@ -18,7 +18,7 @@
 	<property name="srcBeast2" location="${beast2path}/src" />
 	<property name="beast2classpath" location="${beast2path}/build" />
 	<property name="Add_on_dir" value="${release_dir}/add-on" />
-	<property name="version" value="1.0.2" />
+	<property name="version" value="1.0.3" />
 	
 	<property name="buildMODEL_SELECTION" location="../model-selection/build"/>
 	<property name="buildBEAST_LABS" location="../BEASTLabs/build"/>
