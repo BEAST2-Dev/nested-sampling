@@ -15,7 +15,13 @@ import org.apache.commons.math.distribution.BetaDistributionImpl;
 
 import beast.app.BEASTVersion2;
 import beast.app.treeannotator.TreeAnnotator;
+import beast.app.util.Application;
+import beast.app.util.LogFile;
+import beast.app.util.OutFile;
 import beast.app.util.Utils;
+import beast.core.Input;
+import beast.core.Runnable;
+import beast.core.Input.Validate;
 import beast.core.util.Log;
 import beast.evolution.tree.Tree;
 import beast.gss.NS;
@@ -26,6 +32,10 @@ public class NSLogAnalyser extends LogAnalyser {
 	String outFile, treeFile;
 	double [] weights;
 	double ESS;
+	
+	public NSLogAnalyser() {
+		
+	}
 	
     public NSLogAnalyser(String absolutePath, int burninPercentage, boolean quiet, int particleCount) throws IOException {
 		super(absolutePath, burninPercentage, quiet, false);
@@ -468,7 +478,18 @@ public class NSLogAnalyser extends LogAnalyser {
         	System.exit(0);
 	}
     
+    
+
+    
 	public static void main(String[] args) {
+		if (args.length == 0) {
+			try {
+				new Application(new NSLogAnalyserGUI(), "NS Log Analyser", args);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return;
+		}
     try {
         NSLogAnalyser analyser;
         	// process args
