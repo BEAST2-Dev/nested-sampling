@@ -25,19 +25,21 @@ public class NSLogAnalyserGUI extends Runnable {
 	@Override
 	public void run() throws Exception {
 		List<String> args = new ArrayList<>();
-		args.add("log");
+		args.add("-log");
 		args.add(logFileInput.get().getAbsolutePath());
 		
-		args.add("N");
+		args.add("-N");
 		args.add(NInput.get() + "");
 		
-		args.add("quiet");
-		args.add(quietInput.get() + "");
+		if (quietInput.get()) {
+			args.add("-quiet");
+		}
 		
-		args.add("noposterior");
-		args.add(noposteriorInput.get() + "");
+		if (noposteriorInput.get()) {
+			args.add("-noposterior");
+		}
 		
-		args.add("out");
+		args.add("-out");
 		args.add(outputInput.get().getAbsolutePath());
 		
 		NSLogAnalyser.main(args.toArray(new String[]{}));
