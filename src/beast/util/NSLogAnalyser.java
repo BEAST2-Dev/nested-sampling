@@ -160,6 +160,11 @@ public class NSLogAnalyser extends LogAnalyser {
  		v = Math.sqrt(v/RESAMPLE_COUNT-Z*Z);
  		H = hMean / RESAMPLE_COUNT;
  		Log.warning("\nMarginal likelihood: " + Z + " sqrt(H/N)=(" + Math.sqrt(H / N) + ")=?=SD=(" + v + ") Information: " + H);
+ 		if (Math.abs(v) < 1e-6) {
+ 			Log.warning("An (almost) zero standard deviation was found. This probably means that the number of "
+ 					+ "particles provided to NSLogAnalyser (" + this.particleCount + ") is not correct. "
+ 					+ "Be very suspicious of the output.");
+ 		}
  		
 // 		double logX = 0.0;
 //		double u = nextBeta(N, 1.0);

@@ -7,5 +7,9 @@
               class="beast.util.NSLogAnalyser"
               args=""
             />
+    <packageapp description="MCMC to NS converter"
+              class="beast.util.MCMC2NS"
+              args=""
+            />
 
 </package>
