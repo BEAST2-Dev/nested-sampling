@@ -148,6 +148,10 @@ public class NS extends MCMC {
 							"Expected only one likelihood distribution -- change the ID to something that does not start with likelihood and it will be deemed to be a prior.");
 				}
 			} else {
+				if (nextPriorIndex == samplingDistribution.length) {
+					throw new IllegalArgumentException(
+							"Nested sampling needs distribution with id='likelihood' representing the likelihood, but could not find one.");
+				}
 				samplingDistribution[nextPriorIndex] = pDist;
 				nextPriorIndex++;
 			}
