@@ -1,4 +1,4 @@
-package beast.gss;
+package nestedsampling.gss;
 
 
 import java.io.IOException;
@@ -14,13 +14,13 @@ import org.xml.sax.SAXException;
 import beast.core.Description;
 import beast.core.Input;
 import beast.core.Logger;
-import beast.core.NSLogger;
 import beast.core.Operator;
 import beast.core.State;
 import beast.core.util.CompoundDistribution;
 import beast.core.util.Log;
 import beast.evolution.tree.TreeInterface;
-import beast.util.NSLogAnalyser;
+import nestedsampling.core.NSLogger;
+import nestedsampling.util.NSLogAnalyser;
 
 
 

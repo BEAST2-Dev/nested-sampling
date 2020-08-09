@@ -1,4 +1,4 @@
-package beast.gss;
+package nestedsampling.gss;
 
 
 import java.io.IOException;
@@ -18,7 +18,6 @@ import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.Logger;
 import beast.core.MCMC;
-import beast.core.NSLogger;
 import beast.core.Operator;
 import beast.core.State;
 import beast.core.StateNode;
@@ -29,8 +28,9 @@ import beast.core.util.Evaluator;
 import beast.core.util.Log;
 import beast.evolution.tree.Tree;
 import beast.evolution.tree.TreeInterface;
-import beast.util.NSLogAnalyser;
 import beast.util.Randomizer;
+import nestedsampling.core.NSLogger;
+import nestedsampling.util.NSLogAnalyser;
 
 
 /* From wikipedia:

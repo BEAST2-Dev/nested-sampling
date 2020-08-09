@@ -1,14 +1,11 @@
-package beast.core;
+package nestedsampling.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import beast.core.Description;
+import beast.core.*;
 import beast.core.Input.Validate;
-import beast.core.Operator;
-import beast.core.OperatorSchedule;
-import beast.core.StateNode;
 import beast.core.parameter.Parameter;
 import beast.core.util.Log;
 import beast.evolution.operators.TipDatesRandomWalker;
@@ -61,8 +58,8 @@ public class NSOperatorSchedule extends OperatorSchedule {
 		Log.warning("weight schedule = " + weightSchedule);
 		
     	// never optimise for NS
-    	autoOptimise = autoOptimiseInput.get();
-    	Log.warning("autoOptimise = " + autoOptimise);
+    	setAutoOptimise(autoOptimiseInput.get());
+    	Log.warning("autoOptimise = " + autoOptimiseInput.get());
 
     	// collect stateNodes
 		stateNodes = new ArrayList<>();		
@@ -177,7 +174,7 @@ public class NSOperatorSchedule extends OperatorSchedule {
         }
 
         // calculate normalised weights
-        normalizedWeights = new double[operators.size()];
+        double [] normalizedWeights = new double[operators.size()];
         for (int i = 0; i < operatorWeights.length; i++) {
         	for (int j = 0; j < operatorWeights[i].length; j++) {
         		int k = operators.indexOf(stateNodeOperators[i].get(j));
@@ -187,15 +184,17 @@ public class NSOperatorSchedule extends OperatorSchedule {
         }
 //        System.out.println(Arrays.toString(normalizedWeights));
         normalizedWeights = Randomizer.getNormalized(normalizedWeights);
+        setNormalizedWeights(normalizedWeights);
 //        System.out.println(Arrays.toString(normalizedWeights));
         
         
         // calculate cumulative operator probs
-        cumulativeProbs = new double[normalizedWeights.length];
-        cumulativeProbs[0] = normalizedWeights[0];
-        for (int i = 1; i < normalizedWeights.length; i++) {
-        	cumulativeProbs[i] = cumulativeProbs[i-1] + normalizedWeights[i];
+        double [] cumulativeProbs = new double[getNormalizedWeights().length];
+        cumulativeProbs[0] = getNormalizedWeights()[0];
+        for (int i = 1; i < getNormalizedWeights().length; i++) {
+        	cumulativeProbs[i] = cumulativeProbs[i-1] + getNormalizedWeights()[i];
         }
+        setCumulativeProbs(cumulativeProbs);
 //        System.out.println(Arrays.toString(cumulativeProbs));
 
         prevOperator = null;
@@ -217,7 +216,7 @@ public class NSOperatorSchedule extends OperatorSchedule {
     	case CYCLIC :
 	    	{
 		    	if (prevOperator != null) {
-		    		if (prevAcceptedCount != prevOperator.m_nNrAccepted) {
+		    		if (prevAcceptedCount != prevOperator.get_m_nNrAccepted()) {
 		    			// the prevOperator was accepted, so remove 1 from stateNodeWeights
 		    			stateNodeWeights[prevStateNodeIndex]--;
 		    			totalAccepted++;
@@ -242,14 +241,14 @@ public class NSOperatorSchedule extends OperatorSchedule {
 		        double [] ow = operatorWeights[stateNodeIndex];
 		        final int operatorIndex = ow.length == 1 ? 0 : Randomizer.randomChoice(ow);
 		        prevOperator = stateNodeOperators[stateNodeIndex].get(operatorIndex);
-		        prevAcceptedCount = prevOperator.m_nNrAccepted;
+		        prevAcceptedCount = prevOperator.get_m_nNrAccepted();
 		        prevStateNodeIndex = stateNodeIndex;
 		        return prevOperator;
 	    	}
 	    	case AUTO:
 	    	{
 		    	if (prevOperator != null) {
-		    		if (prevAcceptedCount != prevOperator.m_nNrAccepted) {
+		    		if (prevAcceptedCount != prevOperator.get_m_nNrAccepted()) {
 		    			// the prevOperator was accepted, so add 1 from stateNodeAcceptCounts
 		    			stateNodeAcceptCounts[prevStateNodeIndex]++;
 		    		}
@@ -264,7 +263,7 @@ public class NSOperatorSchedule extends OperatorSchedule {
 		        double [] ow = operatorWeights[stateNodeIndex];
 		        final int operatorIndex = ow.length == 1 ? 0 : Randomizer.randomChoice(ow);
 		        prevOperator = stateNodeOperators[stateNodeIndex].get(operatorIndex);
-		        prevAcceptedCount = prevOperator.m_nNrAccepted;
+		        prevAcceptedCount = prevOperator.get_m_nNrAccepted();
 		        prevStateNodeIndex = stateNodeIndex;
 		        return prevOperator;
 	    	}
@@ -273,7 +272,7 @@ public class NSOperatorSchedule extends OperatorSchedule {
     	default:
     		// don't cycle, just pick an operator with static weight distribution
     		{
-    			final int operatorIndex = Randomizer.randomChoice(cumulativeProbs);
+    			final int operatorIndex = Randomizer.randomChoice(getCumulativeProbs());
     			return operators.get(operatorIndex);
     		}
     	}

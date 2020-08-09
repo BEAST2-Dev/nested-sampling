@@ -2,14 +2,31 @@
 	<depends on='beast2' atleast='2.6.0'/>
 	<depends on='BEASTLabs' atleast='1.9.0'/>
 	<depends on='MODEL_SELECTION' atleast='1.5.0'/>
-	
+
     <packageapp description="Nested Sampling Log Analyser"
-              class="beast.util.NSLogAnalyser"
+              class="nestedsampling.util.NSLogAnalyser"
               args=""
             />
     <packageapp description="MCMC to NS converter"
-              class="beast.util.MCMC2NS"
+              class="nestedsampling.util.MCMC2NS"
               args=""
             />
+
+			<map from="beast.core.NSLogger" to="nestedsampling.core.NSLogger"/>
+			<map from="beast.core.NSOperatorSchedule" to="nestedsampling.core.NSOperatorSchedule"/>
+
+			<map from="beast.util.MCMC2NIS" to="nestedsampling.util.MCMC2NIS"/>
+			<map from="beast.util.MCMC2NS" to="nestedsampling.util.MCMC2NS"/>
+			<map from="beast.util.NSLogAnalyserGUI" to="nestedsampling.util.NSLogAnalyserGUI"/>
+			<map from="beast.util.NSLogAnalyser" to="nestedsampling.util.NSLogAnalyser"/>
+
+			<map from="beast.gss.DynamicNestedSampling" to="nestedsampling.gss.DynamicNestedSampling"/>
+			<map from="beast.gss.MultiThreadedNS" to="nestedsampling.gss.MultiThreadedNS"/>
+			<map from="beast.gss.NIS" to="nestedsampling.gss.NIS"/>
+			<map from="beast.gss.NS" to="nestedsampling.gss.NS"/>
+			<map from="beast.gss.NSThread" to="nestedsampling.gss.NSThread"/>
+
+			<map from="beast.evolution.speciation.YuleModelNormalised" to="nestedsampling.evolution.speciation.YuleModelNormalised"/>
+
 
 </package>

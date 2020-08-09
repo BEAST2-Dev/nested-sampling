@@ -1,4 +1,4 @@
-package beast.evolution.speciation;
+package nestedsampling.evolution.speciation;
 
 import java.util.*;
 

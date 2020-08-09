@@ -1,4 +1,4 @@
-package beast.gss;
+package nestedsampling.gss;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;

@@ -1,4 +1,4 @@
-package beast.core;
+package nestedsampling.core;
 
 
 import java.io.ByteArrayOutputStream;
@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 
+import beast.core.Description;
 import beast.core.Loggable;
 import beast.core.Logger;
 import beast.util.XMLProducer;
@@ -36,8 +37,8 @@ public class NSLogger extends Logger {
                 out.print("Sample\t");
                 out.print("NSlikelihood\t");
             }
-            for (final Loggable m_logger : loggerList) {
-                m_logger.init(out);
+            for (final Object m_logger : loggersInput.get()) {
+                ((Loggable)m_logger).init(out);
             }
 
             // Remove trailing tab from header
@@ -73,8 +74,8 @@ public class NSLogger extends Logger {
             out.print(NSlikelihood + "\t");
         }
 
-        for (final Loggable m_logger : loggerList) {
-            m_logger.log(sampleNr, out);
+        for (final Object m_logger : loggersInput.get()) {
+        	((Loggable)m_logger).log(sampleNr, out);
         }
 
         // Acquire log string and trim excess tab

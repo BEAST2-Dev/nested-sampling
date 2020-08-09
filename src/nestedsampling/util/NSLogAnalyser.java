@@ -1,4 +1,5 @@
-package beast.util;
+package nestedsampling.util;
+
 
 import static beast.util.OutputUtils.format;
 
@@ -24,8 +25,8 @@ import beast.core.Runnable;
 import beast.core.Input.Validate;
 import beast.core.util.Log;
 import beast.evolution.tree.Tree;
-import beast.gss.NS;
-import beast.util.LogAnalyser;
+import beast.util.*;
+import nestedsampling.gss.NS;
 
 public class NSLogAnalyser extends LogAnalyser {
 	public int particleCount = -1;
@@ -210,15 +211,18 @@ public class NSLogAnalyser extends LogAnalyser {
         logln("\nCalculating statistics\n\n" + BAR);
         int stars = 0;
         int items = m_sLabels.length;
-        m_fMean = newDouble(items);
-        m_fStdError = newDouble(items);
-        m_fStdDev = newDouble(items);
-        m_fMedian = newDouble(items);
-        m_f95HPDlow = newDouble(items);
-        m_f95HPDup = newDouble(items);
-        m_fESS = newDouble(items);
-        m_fACT = newDouble(items);
-        m_fGeometricMean = newDouble(items);
+        Double [] m_fMean = newDouble(items);
+        Double [] m_fStdError = newDouble(items);
+        Double [] m_fStdDev = newDouble(items);
+        Double [] m_fMedian = newDouble(items);
+        Double [] m_f95HPDlow = newDouble(items);
+        Double [] m_f95HPDup = newDouble(items);
+        Double [] m_fESS = newDouble(items);
+        Double [] m_fACT = newDouble(items);
+        Double [] m_fGeometricMean = newDouble(items);
+        
+
+        
 //        int sampleInterval = (int) (m_fTraces[0][1] - m_fTraces[0][0]);
         for (int i = 2; i < items; i++) {
             // calc mean and standard deviation
@@ -286,6 +290,15 @@ public class NSLogAnalyser extends LogAnalyser {
         }
         logln("\n");
         
+        setMean(m_fMean);
+        setStdError(m_fStdError);
+        setStdDev(m_fStdDev);
+        setMedian(m_fMedian);
+        set95HPDlow(m_f95HPDlow);
+        set95HPDup(m_f95HPDup);
+        setESS(m_fESS);
+        setACT(m_fACT);
+        setGeometricMean(m_fGeometricMean);
         
         if (outFile != null) {
         	try {
@@ -356,7 +369,8 @@ public class NSLogAnalyser extends LogAnalyser {
 			entryCount[Randomizer.randomChoicePDF(orderedWeights)]++;
 		}
 		
-		writeFile(out, entryCount, traceFile.m_sLabels, traceFile.m_fTraces, isTreeFile ? inFile : null);
+		writeFile(out, entryCount, traceFile.getLabels().toArray(new String[] {}), 
+					traceFile.getTraces(), isTreeFile ? inFile : null);
 
 		Log.warning("Log file written to " + outFile);
 	}
@@ -462,8 +476,8 @@ public class NSLogAnalyser extends LogAnalyser {
         out.println("item" + space.substring(4) + " " + prefixHead +
         		format("mean")  + format("stddev"));
         for (int i = 2; i < m_sLabels.length; i++) {
-            out.println(m_sLabels[i] + space.substring(m_sLabels[i].length()) + SPACE + (prefix == null ? "" : prefix + SPACE) +
-                    format(m_fMean[i]) + SPACE + format(m_fStdDev[i]));
+            out.println(m_sLabels[i] + space.substring(m_sLabels[i].length()) + OutputUtils.SPACE + (prefix == null ? "" : prefix + OutputUtils.SPACE) +
+                    format(getMean()[i]) + OutputUtils.SPACE + format(getStdDev()[i]));
         }
     }
 

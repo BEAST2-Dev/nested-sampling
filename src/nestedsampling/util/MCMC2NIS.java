@@ -1,12 +1,12 @@
-package beast.util;
+package nestedsampling.util;
 
 import beast.app.util.Application;
 import beast.core.Description;
 import beast.core.Input;
 import beast.core.MCMC;
 import beast.core.Runnable;
-import beast.gss.MCMC2IS;
-import beast.gss.NS;
+import modelselection.gss.MCMC2IS;
+import nestedsampling.gss.NS;
 
 @Description("Convert MCMC analysis to nested importance sampling analysis and optionally run the analysis")
 public class MCMC2NIS extends MCMC2IS {

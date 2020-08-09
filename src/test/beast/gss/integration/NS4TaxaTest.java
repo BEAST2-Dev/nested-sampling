@@ -10,11 +10,11 @@ import org.junit.Test;
 import org.xml.sax.SAXException;
 
 import beast.core.Logger;
-import beast.gss.NS;
 import beast.util.Randomizer;
 import beast.util.XMLParser;
 import beast.util.XMLParserException;
 import junit.framework.TestCase;
+import nestedsampling.gss.NS;
 
 public class NS4TaxaTest extends TestCase {
 	

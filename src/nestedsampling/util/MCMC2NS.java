@@ -1,4 +1,4 @@
-package beast.util;
+package nestedsampling.util;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -18,7 +18,10 @@ import beast.core.Runnable;
 import beast.core.Input.Validate;
 import beast.core.Logger;
 import beast.core.util.Log;
-import beast.gss.NS;
+import beast.util.XMLParser;
+import beast.util.XMLParserException;
+import beast.util.XMLProducer;
+import nestedsampling.gss.NS;
 
 @Description("Convert MCMC analysis to nested sampling analysis")
 public class MCMC2NS extends Runnable {
@@ -85,7 +88,7 @@ public class MCMC2NS extends Runnable {
 	        outfile.close();
 	        
 			
-		} catch (SAXException | IOException | ParserConfigurationException | XMLParserException e) {
+		} catch (XMLParserException | IOException | SAXException | ParserConfigurationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 

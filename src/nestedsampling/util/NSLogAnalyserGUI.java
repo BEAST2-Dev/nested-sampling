@@ -1,4 +1,4 @@
-package beast.util;
+package nestedsampling.util;
 
 import java.util.ArrayList;
 import java.util.List;
