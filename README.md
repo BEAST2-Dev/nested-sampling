@@ -7,3 +7,5 @@
 
 [Paper](https://academic.oup.com/sysbio/advance-article-abstract/doi/10.1093/sysbio/syy050/5046926?redirectedFrom=fulltext)/
 [Preprint](https://arxiv.org/abs/1703.05471)
+
+Citation: Maturana PM, Brewer BJ, Klaere S, Bouckaert RR. Model selection and parameter inference in phylogenetics using Nested Sampling. Systematic biology. 2019 Mar 1;68(2):219-33. [doi:10.1093/sysbio/syy050](doi:10.1093/sysbio/syy050)
