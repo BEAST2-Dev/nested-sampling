@@ -1,6 +1,7 @@
 package test.beast.gss.integration;
 
-import test.beast.integration.ExampleXmlParsingTest;
+import test.beastfx.integration.ExampleXmlParsingTest;
+
 
 public class XMLParsingTest extends ExampleXmlParsingTest {
 

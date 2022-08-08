@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.evolution.likelihood" required="" version="2.4">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.alignment:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="" version="2.4">
 
 
     <data
@@ -24,16 +24,16 @@ name="alignment">
 
 
     
-<map name="Uniform" >beast.math.distributions.Uniform</map>
-<map name="Exponential" >beast.math.distributions.Exponential</map>
-<map name="LogNormal" >beast.math.distributions.LogNormalDistributionModel</map>
-<map name="Normal" >beast.math.distributions.Normal</map>
-<map name="Beta" >beast.math.distributions.Beta</map>
-<map name="Gamma" >beast.math.distributions.Gamma</map>
-<map name="LaplaceDistribution" >beast.math.distributions.LaplaceDistribution</map>
-<map name="prior" >beast.math.distributions.Prior</map>
-<map name="InverseGamma" >beast.math.distributions.InverseGamma</map>
-<map name="OneOnX" >beast.math.distributions.OneOnX</map>
+<map name="Uniform" >beast.base.inference.distribution.Uniform</map>
+<map name="Exponential" >beast.base.inference.distribution.Exponential</map>
+<map name="LogNormal" >beast.base.inference.distribution.LogNormalDistributionModel</map>
+<map name="Normal" >beast.base.inference.distribution.Normal</map>
+<map name="Beta" >beast.base.inference.distribution.Beta</map>
+<map name="Gamma" >beast.base.inference.distribution.Gamma</map>
+<map name="LaplaceDistribution" >beast.base.inference.distribution.LaplaceDistribution</map>
+<map name="prior" >beast.base.inference.distribution.Prior</map>
+<map name="InverseGamma" >beast.base.inference.distribution.InverseGamma</map>
+<map name="OneOnX" >beast.base.inference.distribution.OneOnX</map>
 
 
 <!-- stepping stone 
@@ -56,20 +56,20 @@ name="alignment">
         <parameter id="birthRate.t:dna" name="stateNode">1.0</parameter>
     </state>
 
-    <init id="RandomTree.t:dna" spec="beast.evolution.tree.RandomTree" estimate="false" initial="@Tree.t:dna" taxa="@dna">
+    <init id="RandomTree.t:dna" spec="beast.base.evolution.tree.coalescent.RandomTree" estimate="false" initial="@Tree.t:dna" taxa="@dna">
         <populationModel id="ConstantPopulation0.t:dna" spec="ConstantPopulation">
             <parameter id="randomPopSize.t:dna" name="popSize">1.0</parameter>
         </populationModel>
     </init>
 
-    <distribution id="posterior" spec="util.CompoundDistribution">
-        <distribution id="prior" spec="util.CompoundDistribution">
-            <distribution id="YuleModel.t:dna" spec="beast.evolution.speciation.YuleModel" birthDiffRate="@birthRate.t:dna" tree="@Tree.t:dna"/>
+    <distribution id="posterior" spec="beast.base.inference.CompoundDistribution">
+        <distribution id="prior" spec="beast.base.inference.CompoundDistribution">
+            <distribution id="YuleModel.t:dna" spec="beast.base.evolution.speciation.YuleModel" birthDiffRate="@birthRate.t:dna" tree="@Tree.t:dna"/>
             <prior id="YuleBirthRatePrior.t:dna" name="distribution" x="@birthRate.t:dna">
                 <Uniform id="Uniform.1" name="distr" upper="10"/>
             </prior>
         </distribution>
-        <distribution id="likelihood" spec="util.CompoundDistribution" useThreads="true">
+        <distribution id="likelihood" spec="beast.base.inference.CompoundDistribution" useThreads="true">
             <distribution id="treeLikelihood.dna" spec="ThreadedTreeLikelihood" data="@dna" tree="@Tree.t:dna">
                 <siteModel id="SiteModel.s:dna" spec="SiteModel">
                     <parameter id="mutationRate.s:dna" estimate="false" name="mutationRate">1.0</parameter>
@@ -77,7 +77,7 @@ name="alignment">
                     <parameter id="proportionInvariant.s:dna" estimate="false" lower="0.0" name="proportionInvariant" upper="1.0">0.0</parameter>
                     <substModel id="JC69.s:dna" spec="JukesCantor"/>
                 </siteModel>
-                <branchRateModel id="StrictClock.c:dna" spec="beast.evolution.branchratemodel.StrictClockModel">
+                <branchRateModel id="StrictClock.c:dna" spec="beast.base.evolution.branchratemodel.StrictClockModel">
                     <parameter id="clockRate.c:dna" estimate="false" name="clock.rate">1.0</parameter>
                 </branchRateModel>
             </distribution>
@@ -105,7 +105,7 @@ name="alignment">
         <log idref="likelihood"/>
         <log idref="prior"/>
         <log idref="treeLikelihood.dna"/>
-        <log id="TreeHeight.t:dna" spec="beast.evolution.tree.TreeHeightLogger" tree="@Tree.t:dna"/>
+        <log id="TreeHeight.t:dna" spec="beast.base.evolution.tree.TreeHeightLogger" tree="@Tree.t:dna"/>
         <log idref="YuleModel.t:dna"/>
         <log idref="birthRate.t:dna"/>
     </logger>
@@ -118,7 +118,7 @@ name="alignment">
     </logger>
 
     <logger id="treelog.t:dna" fileName="$(tree).trees" logEvery="10000" mode="tree">
-        <log id="TreeWithMetaDataLogger.t:dna" spec="beast.evolution.tree.TreeWithMetaDataLogger" tree="@Tree.t:dna"/>
+        <log id="TreeWithMetaDataLogger.t:dna" spec="beast.base.evolution.TreeWithMetaDataLogger" tree="@Tree.t:dna"/>
     </logger>
 
 </run>

@@ -7,20 +7,20 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
-import beast.app.util.Application;
-import beast.app.util.OutFile;
-import beast.app.util.XMLFile;
-import beast.core.Description;
-import beast.core.Input;
-import beast.core.MCMC;
-import beast.core.OperatorSchedule;
-import beast.core.Runnable;
-import beast.core.Input.Validate;
-import beast.core.Logger;
-import beast.core.util.Log;
-import beast.util.XMLParser;
-import beast.util.XMLParserException;
-import beast.util.XMLProducer;
+import beastfx.app.tools.Application;
+import beastfx.app.util.OutFile;
+import beastfx.app.util.XMLFile;
+import beast.base.core.Description;
+import beast.base.core.Input;
+import beast.base.inference.MCMC;
+import beast.base.inference.OperatorSchedule;
+import beast.base.inference.Runnable;
+import beast.base.core.Input.Validate;
+import beast.base.inference.Logger;
+import beast.base.core.Log;
+import beast.base.parser.XMLParser;
+import beast.base.parser.XMLParserException;
+import beast.base.parser.XMLProducer;
 import nestedsampling.gss.NS;
 
 @Description("Convert MCMC analysis to nested sampling analysis")

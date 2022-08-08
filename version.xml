@@ -1,7 +1,7 @@
 <package name='NS' version='1.1.0'>
-	<depends on='beast2' atleast='2.6.0'/>
-	<depends on='BEASTLabs' atleast='1.9.0'/>
-	<depends on='MODEL_SELECTION' atleast='1.5.0'/>
+  <depends on='BEAST.base' atleast='2.7.0'/>
+  <depends on='BEAST.app' atleast='2.7.0'/>
+	<depends on='MODEL_SELECTION' atleast='1.6.0'/>
 
     <packageapp description="Nested Sampling Log Analyser"
               class="nestedsampling.util.NSLogAnalyser"
@@ -27,6 +27,21 @@
 			<map from="beast.gss.NSThread" to="nestedsampling.gss.NSThread"/>
 
 			<map from="beast.evolution.speciation.YuleModelNormalised" to="nestedsampling.evolution.speciation.YuleModelNormalised"/>
+
+
+    <service type="beast.base.core.BEASTInterface">
+        <provider classname="nestedsampling.core.NSLogger"/>
+        <provider classname="nestedsampling.core.NSOperatorSchedule"/>
+        <provider classname="nestedsampling.evolution.speciation.YuleModelNormalised"/>
+        <provider classname="nestedsampling.gss.DynamicNestedSampling"/>
+        <provider classname="nestedsampling.gss.MultiThreadedNS"/>
+        <provider classname="nestedsampling.gss.NIS"/>
+        <provider classname="nestedsampling.gss.NS"/>
+        <provider classname="nestedsampling.gss.NSThread"/>
+        <provider classname="nestedsampling.util.MCMC2NIS"/>
+        <provider classname="nestedsampling.util.MCMC2NS"/>
+        <provider classname="nestedsampling.util.NSLogAnalyserGUI"/>
+    </service>
 
 
 </package>

@@ -1,7 +1,7 @@
 package nestedsampling.gss;
 
 
-import java.io.File;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,24 +12,23 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
-import beast.app.beauti.Beauti;
-import beast.core.Citation;
-import beast.core.Description;
-import beast.core.Distribution;
-import beast.core.Input;
-import beast.core.Logger;
-import beast.core.MCMC;
-import beast.core.Operator;
-import beast.core.State;
-import beast.core.StateNode;
-import beast.core.StateNodeInitialiser;
-import beast.core.parameter.Parameter;
-import beast.core.util.CompoundDistribution;
-import beast.core.util.Evaluator;
-import beast.core.util.Log;
-import beast.evolution.tree.Tree;
-import beast.evolution.tree.TreeInterface;
-import beast.util.Randomizer;
+import beast.base.core.Citation;
+import beast.base.core.Description;
+import beast.base.inference.Distribution;
+import beast.base.core.Input;
+import beast.base.inference.Logger;
+import beast.base.inference.MCMC;
+import beast.base.inference.Operator;
+import beast.base.inference.State;
+import beast.base.inference.StateNode;
+import beast.base.inference.StateNodeInitialiser;
+import beast.base.inference.parameter.Parameter;
+import beast.base.inference.CompoundDistribution;
+import beast.base.inference.Evaluator;
+import beast.base.core.Log;
+import beast.base.evolution.tree.Tree;
+import beast.base.evolution.tree.TreeInterface;
+import beast.base.util.Randomizer;
 import nestedsampling.core.NSLogger;
 import nestedsampling.util.NSLogAnalyser;
 
@@ -907,7 +906,7 @@ public class NS extends MCMC {
 	 * 
 	 * @param currState
 	 *            the current state
-	 * @return the selected {@link beast.core.Operator}
+	 * @return the selected {@link beast.base.inference.Operator}
 	 */
 	protected boolean composeProposal(final int currState) {
 		boolean accept = false;

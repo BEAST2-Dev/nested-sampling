@@ -1,5 +1,5 @@
 <beast version='2.0'
-       namespace='beast.app.beauti:beast.core:beast.evolution.branchratemodel:beast.evolution.speciation:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.evolution.likelihood:beast.evolution:beast.math.distributions'
+       namespace='beast.app.beauti:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.branchratemodel:beast.base.evolution.speciation:beast.base.evolution.tree.coalescent:beast.base.util:beast.base.math:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood:beast.evolution:beast.base.inference.distribution'
 	templateinfo='template for standard phylogenetic analysis,&lt;br> supporting tip-date analysis and calibrations'>
 
 <!--
@@ -26,7 +26,7 @@
             </distribution>
         </distribution>
 
-        <logger id='tracelog' spec="beast.core.Logger" logEvery="1000" fileName="beast.log" sort="smart" sanitiseHeaders='true'>
+        <logger id='tracelog' spec="beast.base.inference.Logger" logEvery="1000" fileName="beast.log" sort="smart" sanitiseHeaders='true'>
 	        <model idref='posterior'/>
             <log idref="posterior"/>
             <log idref="likelihood"/>
@@ -82,7 +82,7 @@ java -cp $(java.class.path) beast.app.beastapp.BeastMain $(resume/overwrite) -ja
 </subtemplate>
 
 
-        <subtemplate id='MCMC' class='beast.core.MCMC' mainid='mcmc'>
+        <subtemplate id='MCMC' class='beast.base.inference.MCMC' mainid='mcmc'>
 <![CDATA[
     <run spec="MCMC" id="mcmc" chainLength="1000000">
 

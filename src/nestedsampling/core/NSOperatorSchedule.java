@@ -4,14 +4,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import beast.core.*;
-import beast.core.Input.Validate;
-import beast.core.parameter.Parameter;
-import beast.core.util.Log;
-import beast.evolution.operators.TipDatesRandomWalker;
-import beast.evolution.operators.TipDatesScaler;
-import beast.evolution.tree.TreeInterface;
-import beast.util.Randomizer;
+import beast.base.core.BEASTInterface;
+import beast.base.core.Description;
+import beast.base.core.Input;
+import beast.base.core.Input.Validate;
+import beast.base.inference.Operator;
+import beast.base.inference.OperatorSchedule;
+import beast.base.inference.StateNode;
+import beast.base.inference.parameter.Parameter;
+import beast.base.core.Log;
+import beast.base.evolution.operator.TipDatesRandomWalker;
+import beast.base.evolution.operator.TipDatesScaler;
+import beast.base.evolution.tree.TreeInterface;
+import beast.base.util.Randomizer;
 
 @Description("Operator scedule that automatically determines operator weights")
 public class NSOperatorSchedule extends OperatorSchedule {

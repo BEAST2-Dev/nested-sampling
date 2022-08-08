@@ -1,7 +1,7 @@
 package nestedsampling.util;
 
 
-import static beast.util.OutputUtils.format;
+import static beast.base.parser.OutputUtils.format;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,18 +14,15 @@ import org.apache.commons.math.MathException;
 import org.apache.commons.math.distribution.BetaDistribution;
 import org.apache.commons.math.distribution.BetaDistributionImpl;
 
-import beast.app.BEASTVersion2;
-import beast.app.treeannotator.TreeAnnotator;
-import beast.app.util.Application;
-import beast.app.util.LogFile;
-import beast.app.util.OutFile;
-import beast.app.util.Utils;
-import beast.core.Input;
-import beast.core.Runnable;
-import beast.core.Input.Validate;
-import beast.core.util.Log;
-import beast.evolution.tree.Tree;
-import beast.util.*;
+import beast.base.core.BEASTVersion2;
+import beastfx.app.treeannotator.TreeAnnotator;
+import beastfx.app.tools.Application;
+import beastfx.app.tools.LogAnalyser;
+import beastfx.app.util.Utils;
+import beast.base.parser.OutputUtils;
+import beast.base.util.Randomizer;
+import beast.base.core.Log;
+import beast.base.evolution.tree.Tree;
 import nestedsampling.gss.NS;
 
 public class NSLogAnalyser extends LogAnalyser {
@@ -402,7 +399,7 @@ public class NSLogAnalyser extends LogAnalyser {
 
 		} else {
 			// resample tree file
-			beast.app.treeannotator.TreeAnnotator.MemoryFriendlyTreeSet treeset = new TreeAnnotator().new MemoryFriendlyTreeSet(treeFile, 0);
+			TreeAnnotator.MemoryFriendlyTreeSet treeset = new TreeAnnotator().new MemoryFriendlyTreeSet(treeFile, 0);
 			treeset.reset();
 			Tree tree = treeset.next();
 			tree.init(out);

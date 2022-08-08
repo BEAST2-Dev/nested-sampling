@@ -9,10 +9,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
-import beast.core.Logger;
-import beast.util.Randomizer;
-import beast.util.XMLParser;
-import beast.util.XMLParserException;
+import beast.base.inference.Logger;
+import beast.base.util.Randomizer;
+import beast.base.parser.XMLParser;
+import beast.base.parser.XMLParserException;
 import junit.framework.TestCase;
 import nestedsampling.gss.NS;
 
@@ -27,7 +27,7 @@ public class NS4TaxaTest extends TestCase {
         Randomizer.setSeed(seed);
         System.out.println("Processing " + fileName);
         XMLParser parser = new XMLParser();
-        beast.core.Runnable runable = parser.parseFile(new File(fileName));
+        beast.base.inference.Runnable runable = parser.parseFile(new File(fileName));
         if (runable instanceof NS) {
             NS ns = (NS) runable;
             ns.run();

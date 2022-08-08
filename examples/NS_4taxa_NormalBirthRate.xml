@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.evolution.likelihood" required="" version="2.5">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.alignment:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="" version="2.5">
 
 
     <data
@@ -34,16 +34,16 @@ ML: -2349.814260249774 Information: 14.442480805674677 (SD ~ 0.12)
 
 
     
-<map name="Uniform" >beast.math.distributions.Uniform</map>
-<map name="Exponential" >beast.math.distributions.Exponential</map>
-<map name="LogNormal" >beast.math.distributions.LogNormalDistributionModel</map>
-<map name="Normal" >beast.math.distributions.Normal</map>
-<map name="Beta" >beast.math.distributions.Beta</map>
-<map name="Gamma" >beast.math.distributions.Gamma</map>
-<map name="LaplaceDistribution" >beast.math.distributions.LaplaceDistribution</map>
-<map name="prior" >beast.math.distributions.Prior</map>
-<map name="InverseGamma" >beast.math.distributions.InverseGamma</map>
-<map name="OneOnX" >beast.math.distributions.OneOnX</map>
+<map name="Uniform" >beast.base.inference.distribution.Uniform</map>
+<map name="Exponential" >beast.base.inference.distribution.Exponential</map>
+<map name="LogNormal" >beast.base.inference.distribution.LogNormalDistributionModel</map>
+<map name="Normal" >beast.base.inference.distribution.Normal</map>
+<map name="Beta" >beast.base.inference.distribution.Beta</map>
+<map name="Gamma" >beast.base.inference.distribution.Gamma</map>
+<map name="LaplaceDistribution" >beast.base.inference.distribution.LaplaceDistribution</map>
+<map name="prior" >beast.base.inference.distribution.Prior</map>
+<map name="InverseGamma" >beast.base.inference.distribution.InverseGamma</map>
+<map name="OneOnX" >beast.base.inference.distribution.OneOnX</map>
 
 
 <run id="mcmc" spec="beast.gss.NS" subChainLength="10000" chainLength="250000" preBurnin="0" particleCount="100" epsilon="1e-10"
@@ -62,22 +62,22 @@ ML: -2349.814260249774 Information: 14.442480805674677 (SD ~ 0.12)
         <parameter id="freqParameter.s:dna" dimension="4" lower="0.0" name="stateNode" upper="1.0">0.25</parameter>
     </state>
 
-    <init id="RandomTree.t:dna" spec="beast.evolution.tree.RandomTree" estimate="false" initial="@Tree.t:dna" taxa="@dna">
+    <init id="RandomTree.t:dna" spec="beast.base.evolution.tree.coalescent.RandomTree" estimate="false" initial="@Tree.t:dna" taxa="@dna">
         <populationModel id="ConstantPopulation0.t:dna" spec="ConstantPopulation">
             <parameter id="randomPopSize.t:dna" name="popSize">1.0</parameter>
         </populationModel>
     </init>
 
-    <distribution id="posterior" spec="util.CompoundDistribution">
-        <distribution id="prior" spec="util.CompoundDistribution">
-            <distribution id="YuleModel.t:dna" spec="beast.evolution.speciation.YuleModel" birthDiffRate="@birthRate.t:dna" tree="@Tree.t:dna"/>
+    <distribution id="posterior" spec="beast.base.inference.CompoundDistribution">
+        <distribution id="prior" spec="beast.base.inference.CompoundDistribution">
+            <distribution id="YuleModel.t:dna" spec="beast.base.evolution.speciation.YuleModel" birthDiffRate="@birthRate.t:dna" tree="@Tree.t:dna"/>
             <prior id="YuleBirthRatePrior.t:dna" name="distribution" x="@birthRate.t:dna">
-                <Normal name="distr" mean="6.5" sigma="0.1" spec="beast.math.distributions.Normal"/>
+                <Normal name="distr" mean="6.5" sigma="0.1" spec="beast.base.inference.distribution.Normal"/>
             </prior>
             <prior id="KappaPrior.s:dna" name="distribution" x="@kappa.s:dna">
                 <Normal id="LogNormalDistributionModel.0" name="distr" mean="2.5" sigma="0.1"/>
             </prior>
-            <distribution id="root.prior" spec="beast.math.distributions.MRCAPrior" monophyletic="true" tree="@Tree.t:dna">
+            <distribution id="root.prior" spec="beast.base.evolution.tree.MRCAPrior" monophyletic="true" tree="@Tree.t:dna">
                 <taxonset id="root" spec="TaxonSet">
                     <taxon id="Cow" spec="Taxon"/>
                     <taxon id="Human" spec="Taxon"/>
@@ -87,7 +87,7 @@ ML: -2349.814260249774 Information: 14.442480805674677 (SD ~ 0.12)
                 <Normal name="distr" mean="0.19" sigma="0.05"/>
             </distribution>
         </distribution>
-        <distribution id="likelihood" spec="util.CompoundDistribution" useThreads="true">
+        <distribution id="likelihood" spec="beast.base.inference.CompoundDistribution" useThreads="true">
             <distribution id="treeLikelihood.dna" spec="ThreadedTreeLikelihood" data="@dna" tree="@Tree.t:dna">
                 <siteModel id="SiteModel.s:dna" spec="SiteModel">
                     <parameter id="mutationRate.s:dna" estimate="false" name="mutationRate">1.0</parameter>
@@ -97,7 +97,7 @@ ML: -2349.814260249774 Information: 14.442480805674677 (SD ~ 0.12)
                         <frequencies id="estimatedFreqs.s:dna" spec="Frequencies" frequencies="@freqParameter.s:dna"/>
                     </substModel>
                 </siteModel>
-                <branchRateModel id="StrictClock.c:dna" spec="beast.evolution.branchratemodel.StrictClockModel">
+                <branchRateModel id="StrictClock.c:dna" spec="beast.base.evolution.branchratemodel.StrictClockModel">
                     <parameter id="clockRate.c:dna" estimate="false" name="clock.rate">1.0</parameter>
                 </branchRateModel>
             </distribution>
@@ -131,7 +131,7 @@ ML: -2349.814260249774 Information: 14.442480805674677 (SD ~ 0.12)
         <log idref="likelihood"/>
         <log idref="prior"/>
         <log idref="treeLikelihood.dna"/>
-        <log id="TreeHeight.t:dna" spec="beast.evolution.tree.TreeHeightLogger" tree="@Tree.t:dna"/>
+        <log id="TreeHeight.t:dna" spec="beast.base.evolution.tree.TreeHeightLogger" tree="@Tree.t:dna"/>
         <log idref="YuleModel.t:dna"/>
         <log idref="birthRate.t:dna"/>
         <log idref="kappa.s:dna"/>
@@ -147,7 +147,7 @@ ML: -2349.814260249774 Information: 14.442480805674677 (SD ~ 0.12)
     </logger>
 
     <logger id="treelog.t:dna" fileName="$(tree).trees" logEvery="1000" mode="tree">
-        <log id="TreeWithMetaDataLogger.t:dna" spec="beast.evolution.tree.TreeWithMetaDataLogger" tree="@Tree.t:dna"/>
+        <log id="TreeWithMetaDataLogger.t:dna" spec="beast.base.evolution.TreeWithMetaDataLogger" tree="@Tree.t:dna"/>
     </logger>
 
 

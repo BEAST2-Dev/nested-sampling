@@ -6,10 +6,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 
-import beast.core.Description;
-import beast.core.Loggable;
-import beast.core.Logger;
-import beast.util.XMLProducer;
+import beast.base.core.Description;
+import beast.base.core.Loggable;
+import beast.base.inference.Logger;
+import beast.base.parser.XMLProducer;
 
 @Description("Trace logger that logs NSLikelihood as second column (used by NSLogAnalyser to prodoce posterior sample)")
 public class NSLogger extends Logger {

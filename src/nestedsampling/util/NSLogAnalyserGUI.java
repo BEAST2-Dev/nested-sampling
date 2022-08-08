@@ -3,12 +3,12 @@ package nestedsampling.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import beast.app.util.LogFile;
-import beast.app.util.OutFile;
-import beast.core.Description;
-import beast.core.Input;
-import beast.core.Runnable;
-import beast.core.Input.Validate;
+import beastfx.app.util.LogFile;
+import beastfx.app.util.OutFile;
+import beast.base.core.Description;
+import beast.base.core.Input;
+import beast.base.inference.Runnable;
+import beast.base.core.Input.Validate;
 
 @Description("GUI wrapper for NSLogAnalyser")
 public class NSLogAnalyserGUI extends Runnable {

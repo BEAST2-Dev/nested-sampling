@@ -6,9 +6,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import beast.core.Description;
-import beast.core.Distribution;
-import beast.util.Randomizer;
+import beast.base.core.Description;
+import beast.base.inference.Distribution;
+import beast.base.util.Randomizer;
 
 @Description("class for performing a one-threaded NS as part of MultiThreadedNS")
 public class NSThread extends NS {
