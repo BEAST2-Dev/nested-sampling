@@ -1,6 +1,6 @@
-<package name='NS' version='1.1.0'>
-  <depends on='BEAST.base' atleast='2.7.0'/>
-  <depends on='BEAST.app' atleast='2.7.0'/>
+<package name='NS' version='1.2.1'>
+  <depends on='BEAST.base' atleast='2.7.5'/>
+  <depends on='BEAST.app' atleast='2.7.5'/>
 	<depends on='MODEL_SELECTION' atleast='1.6.0'/>
 
     <packageapp description="Nested Sampling Log Analyser"

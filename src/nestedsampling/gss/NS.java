@@ -26,6 +26,7 @@ import beast.base.inference.parameter.Parameter;
 import beast.base.inference.CompoundDistribution;
 import beast.base.inference.Evaluator;
 import beast.base.core.Log;
+import beast.base.core.ProgramStatus;
 import beast.base.evolution.tree.Tree;
 import beast.base.evolution.tree.TreeInterface;
 import beast.base.util.Randomizer;
@@ -118,6 +119,9 @@ public class NS extends MCMC {
 	
 	@Override
 	public void initAndValidate() {
+		if (ProgramStatus.name.equals("BEAUti")) {
+			return;
+		}
 		if (sampleFromPriorInput.get()) {
 			throw new IllegalArgumentException("Input 'sampleFromPrior' must not be specified");
 		}
@@ -439,13 +443,23 @@ public class NS extends MCMC {
 			for (int j = 0; j < subChainLength; j++) {
 				composeProposal(1);
 			}
-//reportLogLikelihoods(posterior, "");
+// reportLogLikelihoods(posterior, "");
 			if (originalPrior != null) {
 				updateParticleState(i, state.toXML(0), likelihood.getArrayValue(),
 						likelihood.getArrayValue() + originalPrior.getCurrentLogP() - samplingDistribution[0].getCurrentLogP()); 
 			} else {
 				updateParticleState(i, state.toXML(0), likelihood.getArrayValue(), likelihood.getArrayValue());
 			}
+			
+			
+//			System.out.println(((Tree)state.stateNodeInput.get().get(0)).getRoot().toNewick());
+//			state.fromXML(particleStates[i]);
+//			state.robustlyCalcPosterior(posterior);
+//			System.out.println(((Tree)state.stateNodeInput.get().get(0)).getRoot().toNewick());
+//			
+//reportLogLikelihoods(posterior, "");
+//		System.out.println(particleStates[i]);
+//		System.out.println(state.toXML(0));
 		}
 		Log.warning(particleCount + " particles initialised");
 	}
@@ -603,7 +617,7 @@ public class NS extends MCMC {
 				state.fromXML(particleStates[iMin]);
 			}
 			robustlyCalcPosterior(posterior);
-			//reportLogLikelihoods(posterior, "");
+//			reportLogLikelihoods(posterior, "");
 			
 			
 			if (sampleNr >= 0) {
@@ -666,6 +680,7 @@ public class NS extends MCMC {
 			}
 
 			if (posterior.getCurrentLogP() == Double.POSITIVE_INFINITY) {
+				reportLogLikelihoods(posterior, "");
 				throw new RuntimeException(
 						"Encountered a positive infinite posterior. This is a sign there may be numeric instability in the model.");
 			}

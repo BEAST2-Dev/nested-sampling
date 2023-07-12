@@ -1,5 +1,5 @@
 <!-- Build NS. It is also used by Hudson NS project. JUnit test is available for this build. -->
-<project basedir="." default="addon" name="BUILD_NS">
+<project basedir="." default="package" name="BUILD_NS">
 	<description>
 	    Build NS. 
             Also used by Hudson NS project. 
@@ -109,7 +109,7 @@
 				<include name="nestedsampling/**/*.xsl" />
 			</fileset>
         </jar>
-		<jar jarfile="${distNS}/NS.addon.jar">
+		<jar jarfile="${distNS}/NS.package.jar">
 			<manifest>
 				<attribute name="Built-By" value="${user.name}" />
 			</manifest>
@@ -160,8 +160,9 @@
 		<echo message="JUnit test report finished." />
 	</target>
 
+	<target name="addon" depends="package"/>
 
-	<target name="addon"
+	<target name="package"
 	        depends="build_jar_all_NS_NoJUnitTest"
 	        description="release BEAST 2 add-on version of NS">
 
@@ -179,7 +180,7 @@
 			<fileset dir="examples" />
 		</copy>
 		<copy todir="${Add_on_dir}/lib">
-			<fileset dir="${distNS}" includes="NS.addon.jar" />
+			<fileset dir="${distNS}" includes="NS.package.jar" />
 		</copy>
 		<copy todir="${Add_on_dir}">
 			<fileset dir="${distNS}" includes="NS.src.jar" />
@@ -188,7 +189,7 @@
 			<fileset file="fxtemplates/NS.xml" />
 		</copy>
 
-		<jar jarfile="${distNS}/NS.addon.v${NSversion}.zip">
+		<jar jarfile="${distNS}/NS.package.v${NSversion}.zip">
 			<fileset dir="${Add_on_dir}">
 				<include name="**/*" />
 			</fileset>
