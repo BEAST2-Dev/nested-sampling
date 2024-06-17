@@ -1,6 +1,7 @@
 package nestedsampling.util;
 
 
+
 import static beast.base.parser.OutputUtils.format;
 
 import java.io.File;
@@ -122,7 +123,14 @@ public class NSLogAnalyser extends LogAnalyser {
 // 		}
 // 		Log.warning("Marginal likelihood: " + Z);
 
-
+ 		double maxL = NSLikelihoods[0];
+ 		for (double d : NSLikelihoods) {
+ 			maxL = Math.max(d, maxL);
+ 		}
+ 		for (int k = 0; k < NSLikelihoods.length; k++) {
+ 			NSLikelihoods[k] -= maxL;
+ 		}
+ 		
  		double zMean = 0;
  		double v = 0;
  		double hMean = 0, H = 0;
@@ -157,6 +165,7 @@ public class NSLogAnalyser extends LogAnalyser {
  		Z = zMean / RESAMPLE_COUNT;
  		v = Math.sqrt(v/RESAMPLE_COUNT-Z*Z);
  		H = hMean / RESAMPLE_COUNT;
+ 		Z += maxL;
  		Log.warning("\nMarginal likelihood: " + Z + " sqrt(H/N)=(" + Math.sqrt(H / N) + ")=?=SD=(" + v + ") Information: " + H);
  		if (Math.abs(v) < 1e-6) {
  			Log.warning("An (almost) zero standard deviation was found. This probably means that the number of "
@@ -280,7 +289,8 @@ public class NSLogAnalyser extends LogAnalyser {
                 m_fESS[i] = Double.NaN;
                 m_fGeometricMean[i] = Double.NaN;
 //            }
-            while (stars < 80 * (i + 1) / items) {
+
+      		  while (stars < 80 && 1000.0*stars < 80000.0 * (i + 1) / items) {
                 log("*");
                 stars++;
             }
