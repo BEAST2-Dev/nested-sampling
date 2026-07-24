@@ -1,0 +1,51 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0 http://maven.apache.org/xsd/assembly-2.2.0.xsd">
+    <id>beast-package</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <!-- version.xml at ZIP root -->
+    <files>
+        <file>
+            <source>${project.basedir}/version.xml</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <!-- Source JAR at top level, not in /lib: everything under /lib is put on
+             the module path, and a sources jar has no compiled classes to offer it. -->
+        <file>
+            <source>${project.build.directory}/${project.build.finalName}-sources.jar</source>
+            <destName>${project.build.finalName}-src.jar</destName>
+            <outputDirectory>/</outputDirectory>
+        </file>
+    </files>
+
+    <!-- Everything in /lib lands on the module path, so only include jars meant
+         to be loaded at runtime. Add extra <include> entries here only for
+         runtime deps the BEAST runtime doesn't already provide. -->
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>/lib</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <scope>runtime</scope>
+            <includes>
+                <include>io.github.beast2-dev:nested-sampling</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
+
+    <fileSets>
+        <!-- fxtemplates/ -->
+        <fileSet>
+            <directory>${project.basedir}/src/main/resources/nested.sampling/fxtemplates</directory>
+            <outputDirectory>/fxtemplates</outputDirectory>
+        </fileSet>
+        <!-- examples/ -->
+        <fileSet>
+            <directory>${project.basedir}/src/test/resources/nestedsampling/examples</directory>
+            <outputDirectory>/examples</outputDirectory>
+        </fileSet>
+    </fileSets>
+</assembly>

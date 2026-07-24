@@ -11,9 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.math.MathException;
-import org.apache.commons.math.distribution.BetaDistribution;
-import org.apache.commons.math.distribution.BetaDistributionImpl;
+import org.apache.commons.statistics.distribution.BetaDistribution;
 
 import beast.base.core.BEASTVersion2;
 import beastfx.app.treeannotator.TreeAnnotator;
@@ -635,13 +633,8 @@ public class NSLogAnalyser extends LogAnalyser {
 
 
 	static public double nextBeta(double alpha, double beta) {
-		BetaDistribution distr = new BetaDistributionImpl(alpha, beta);
-		double v = 0;
-		try {
-			v = distr.inverseCumulativeProbability(Randomizer.nextDouble());
-		} catch (MathException e) {
-			e.printStackTrace();
-		}
-		return v;		
+		BetaDistribution distr = BetaDistribution.of(alpha, beta);
+		double v = distr.inverseCumulativeProbability(Randomizer.nextDouble());
+		return v;
 	}
 }
