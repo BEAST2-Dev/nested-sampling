@@ -9,13 +9,15 @@ import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.inference.State;
 import beast.base.inference.parameter.RealParameter;
-import beast.base.evolution.alignment.Alignment;
 import beast.base.evolution.tree.Node;
 import beast.base.evolution.tree.Tree;
 import beast.base.evolution.tree.TreeDistribution;
-import test.beast.BEASTTestCase;
 
 
+// BEAST3 migration: org.apache.commons.math3.util.FastMath calls were switched to
+// org.apache.commons.math4.core.jdkmath.AccurateMath. Per the commons-math 4.0-beta1 changelog,
+// "Class 'FastMath' was renamed 'AccurateMath'" as part of the 4.0 legacy-module reorganisation —
+// a straight rename of the same class, so behaviour is preserved.
 @Description("Yule model with normalisation constant so density integrates to 1")
 public class YuleModelNormalised extends TreeDistribution {
 	public Input<Double> rhoInput = new Input<>("rho", "Extant sampling proportion, default 1", 1.0);
@@ -156,17 +158,7 @@ public class YuleModelNormalised extends TreeDistribution {
 		return true;
 	}
 
-	
-	public static void main(String[] args) throws Exception {
-		Alignment data = BEASTTestCase.getAlignment();
-	    Tree tree = BEASTTestCase.getTree(data);
-	    
-		YuleModelNormalised myd = new YuleModelNormalised();
-		myd.initByName("tree", tree, 
-				"newick", "(human:0.024003,chimp:0.010772,bonobo:0.010772),gorilla:0.036038,orangutan:0.069125,siamang:0.099582;",
-				"birthDiffRate", "0.1",
-				"gamma", "0.5");
-		
-		System.err.println("logP = " + myd.calculateLogP());
-	}
+	// original main containing the dependency to test,
+	// so that the code is moved to {@link test.nestedsampling.evolution.speciation.YuleModelNormalisedTest}
+
 }
