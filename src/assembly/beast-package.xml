@@ -37,15 +37,23 @@
     </dependencySets>
 
     <fileSets>
-        <!-- fxtemplates/ -->
-        <fileSet>
-            <directory>${project.basedir}/src/main/resources/nested.sampling/fxtemplates</directory>
-            <outputDirectory>/fxtemplates</outputDirectory>
-        </fileSet>
-        <!-- examples/ -->
+        <!-- fxtemplates/ inside jar now -->
+<!--        <fileSet>-->
+<!--            <directory>${project.basedir}/src/main/resources/nested.sampling/fxtemplates</directory>-->
+<!--            <outputDirectory>/fxtemplates</outputDirectory>-->
+<!--            <excludes>-->
+<!--                <exclude>**/legacy/**</exclude>-->
+<!--                <exclude>**/reports/**</exclude>-->
+<!--            </excludes>-->
+<!--        </fileSet>-->
+        <!-- examples/ (excluding legacy backups) -->
         <fileSet>
             <directory>${project.basedir}/src/test/resources/nestedsampling/examples</directory>
             <outputDirectory>/examples</outputDirectory>
+            <excludes>
+                <exclude>**/legacy/**</exclude>
+                <exclude>**/reports/**</exclude>
+            </excludes>
         </fileSet>
     </fileSets>
 </assembly>

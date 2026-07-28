@@ -109,6 +109,16 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>**/legacy/**</exclude>
+                    <exclude>**/reports/**</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
         <plugins>
             <!-- Compiler -->
             <plugin>
