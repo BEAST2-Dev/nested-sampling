@@ -11,7 +11,7 @@ import beast.base.core.Input.Validate;
 import beast.base.inference.Operator;
 import beast.base.inference.OperatorSchedule;
 import beast.base.inference.StateNode;
-import beast.base.inference.parameter.Parameter;
+import beast.base.spec.type.Tensor;
 import beast.base.core.Log;
 import beast.base.evolution.operator.TipDatesRandomWalker;
 import beast.base.evolution.operator.TipDatesScaler;
@@ -97,8 +97,8 @@ public class NSOperatorSchedule extends OperatorSchedule {
             totalDimension = 0;
             for (int i = 0; i < stateNodeDimensions.length; i++) {
             	StateNode sn = stateNodes.get(i);
-            	if (sn instanceof Parameter) {
-            		stateNodeDimensions[i] = ((Parameter) sn).getDimension();
+            	if (sn instanceof Tensor) {
+            		stateNodeDimensions[i] = ((Tensor) sn).size();
             	} else {
             		switch (treeWeightScheduleInput.get()) {
             		case x1:
@@ -155,8 +155,8 @@ public class NSOperatorSchedule extends OperatorSchedule {
         int [] operatorDimensions = new int[operators.size()];
         for (int i = 0; i < operators.size(); i++) {
         	for (StateNode sn : operators.get(i).listStateNodes()) {
-            	if (sn instanceof Parameter) {
-            		operatorDimensions[i] += ((Parameter) sn).getDimension();
+            	if (sn instanceof Tensor) {
+            		operatorDimensions[i] += ((Tensor) sn).size();
             	} else {
             		operatorDimensions[i] += 2 * ((TreeInterface) sn).getNodeCount();
             	}        		 

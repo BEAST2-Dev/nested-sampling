@@ -1,24 +1,14 @@
-<beast version='2.7'
-       namespace='beastfx.app.beauti:beastfx.app.inputeditor:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.branchratemodel:beast.base.evolution.speciation:beast.base.evolution.tree.coalescent:beast.base.util:beast.base.math:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood:beast.evolution:beast.base.inference.distribution'
-	templateinfo='template for standard phylogenetic analysis,&lt;br> supporting tip-date analysis and calibrations'>
+<?xml version='1.0' encoding='UTF-8'?>
+<beast version="2.8"
+       namespace="beastfx.app.beauti:beastfx.app.inputeditor:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.branchratemodel:beast.base.evolution.speciation:beast.base.evolution.tree.coalescent:beast.base.util:beast.base.math:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood:beast.evolution:beast.base.inference.distribution"
+       templateinfo="template for standard phylogenetic analysis,&lt;br&gt; supporting tip-date analysis and calibrations">
 
-<map name='connect' reserved='true'>beastfx.app.inputeditor.BeautiConnector</map>
-<map name='subtemplate' reserved='true'>beastfx.app.inputeditor.BeautiSubTemplate</map>
-<map name='Uniform'>beast.base.inference.distribution.Uniform</map>
-<map name='Normal'>beast.base.inference.distribution.Normal</map>
-<map name='OneOnX'>beast.base.inference.distribution.OneOnX</map>
-<map name='LogNormal'>beast.base.inference.distribution.LogNormalDistributionModel</map>
-<map name='Exponential'>beast.base.inference.distribution.Exponential</map>
-<map name='Gamma'>beast.base.inference.distribution.Gamma</map>
-<map name='Beta'>beast.base.inference.distribution.Beta</map>
-<map name='LaplaceDistribution'>beast.base.inference.distribution.LaplaceDistribution</map>
-<map name='InverseGamma'>beast.base.inference.distribution.InverseGamma</map>
-<map name='prior'>beast.base.inference.distribution.Prior</map>
+    <map name='connect' reserved='true'>beastfx.app.inputeditor.BeautiConnector</map>
+    <map name='subtemplate' reserved='true'>beastfx.app.inputeditor.BeautiSubTemplate</map>
 
-
-	<mergewith point='runnables'>
-        <subtemplate id='Nested Sampling' class='nestedsampling.gss.NS' mainid='NS'
-	        suppressInputs="nestedsampling.gss.NS.operator,
+    <mergewith point="runnables">
+        <subtemplate id="Nested Sampling" class="nestedsampling.gss.NS" mainid="NS"
+                     suppressInputs="nestedsampling.gss.NS.operator,
     			nestedsampling.gss.NS.operatorschedule,
 	    	    nestedsampling.gss.NS.state,
 	        	nestedsampling.gss.NS.distribution,
@@ -30,36 +20,35 @@
 	        	nestedsampling.gss.NS.sampleFromPrior,
 	        	nestedsampling.gss.NS.init">
 <![CDATA[
-    <run spec="nestedsampling.gss.NS" id="NS" chainLength="20000" particleCount="1" epsilon="1e-10">
+    &lt;run spec="nestedsampling.gss.NS" id="NS" chainLength="20000" particleCount="1" epsilon="1e-10"&gt;
 
         <state storeEvery='5000' id='state'>
         </state>
 
-        <distribution spec="CompoundDistribution" id="posterior">
-            <distribution spec="CompoundDistribution" id="prior">
-            </distribution>
-            <distribution spec="CompoundDistribution" id="likelihood" useThreads="true">
-            </distribution>
-        </distribution>
+        &lt;distribution spec="CompoundDistribution" id="posterior"&gt;
+            &lt;distribution spec="CompoundDistribution" id="prior"&gt;
+            &lt;/distribution&gt;
+            &lt;distribution spec="CompoundDistribution" id="likelihood" useThreads="true"&gt;
+            &lt;/distribution&gt;
+        &lt;/distribution&gt;
 
-        <logger id='tracelog' spec="beast.base.inference.Logger" logEvery="1000" fileName="beast.log" sort="smart" sanitiseHeaders='true'>
-	        <model idref='posterior'/>
-            <log idref="posterior"/>
-            <log idref="likelihood"/>
-            <log idref="prior"/>
-        </logger>
+        &lt;logger id='tracelog' spec="beast.base.inference.Logger" logEvery="1000" fileName="beast.log" sort="smart" sanitiseHeaders='true'&gt;
+	        &lt;model idref='posterior'/&gt;
+            &lt;log idref="posterior"/&gt;
+            &lt;log idref="likelihood"/&gt;
+            &lt;log idref="prior"/&gt;
+        &lt;/logger&gt;
 
-        <logger id='screenlog' logEvery="1000">
-            <log idref="posterior"/>
-      	    <ESS spec='ESS' name='log' arg="@posterior"/>
-            <log idref="likelihood"/>
-            <log idref="prior"/>
-        </logger>
-    </run>
+        &lt;logger id='screenlog' logEvery="1000"&gt;
+            &lt;log idref="posterior"/&gt;
+      	    &lt;ESS spec='beast.base.spec.inference.util.ESS' name='log' arg="@posterior"/&gt;
+            &lt;log idref="likelihood"/&gt;
+            &lt;log idref="prior"/&gt;
+        &lt;/logger&gt;
+    &lt;/run&gt;
 ]]>
 </subtemplate>
 
 </mergewith>
 
 </beast>
-

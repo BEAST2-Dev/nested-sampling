@@ -22,10 +22,10 @@ import java.net.URL;
  */
 public class XMLPathUtil {
 
-    private static final String EXAMPLES_CLASSPATH = "beast.base/examples";
+    private static final String EXAMPLES_CLASSPATH = "nestedsampling/examples";
 
     /**
-     * Returns the absolute path to the beast.base examples directory.
+     * Returns the absolute path to this package's examples directory.
      * Resolves via the test classpath (works on any machine or CI runner),
      * falling back to {@code user.dir} if the resource is not found.
      */

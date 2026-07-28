@@ -2,13 +2,14 @@ package nestedsampling.evolution.speciation;
 
 import java.util.*;
 
+import beast.base.spec.domain.PositiveReal;
 import org.apache.commons.math4.core.jdkmath.AccurateMath;
 
 import beast.base.core.Description;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.inference.State;
-import beast.base.inference.parameter.RealParameter;
+import beast.base.spec.type.RealScalar;
 import beast.base.evolution.tree.Node;
 import beast.base.evolution.tree.Tree;
 import beast.base.evolution.tree.TreeDistribution;
@@ -21,11 +22,11 @@ import beast.base.evolution.tree.TreeDistribution;
 @Description("Yule model with normalisation constant so density integrates to 1")
 public class YuleModelNormalised extends TreeDistribution {
 	public Input<Double> rhoInput = new Input<>("rho", "Extant sampling proportion, default 1", 1.0);
-	public Input<RealParameter> lambdaInput = new Input<>("birthDiffRate", "birth rate, one for each clade", Validate.REQUIRED);
+	public Input<RealScalar<PositiveReal>> lambdaInput = new Input<>("birthDiffRate", "birth rate, one for each clade", Validate.REQUIRED);
 
 	protected double rho;
-	
-	RealParameter lambda;
+
+	RealScalar<PositiveReal> lambda;
 	
 	double [] oldLength;
 	double [] oldRate;
@@ -38,10 +39,6 @@ public class YuleModelNormalised extends TreeDistribution {
 		tree = (Tree) treeInput.get();
 		rho = rhoInput.get();
 		lambda = lambdaInput.get();
-
-		if (lambda.getDimension() != 1) {
-			throw new IllegalArgumentException("birth rate input should have dimension 1");
-		}
 	}
 
 	@Override
@@ -56,7 +53,7 @@ public class YuleModelNormalised extends TreeDistribution {
 		final double gamma = 0;
 
 		for (Node node : tree.getNodesAsArray()) {
-			final double lambda = this.lambda.getValue();
+			final double lambda = this.lambda.get();
 			final double t = node.getHeight();
 			if (node.isRoot()) {
 				if( rho != 1 ) {

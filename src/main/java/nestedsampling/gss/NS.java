@@ -22,7 +22,7 @@ import beast.base.inference.Operator;
 import beast.base.inference.State;
 import beast.base.inference.StateNode;
 import beast.base.inference.StateNodeInitialiser;
-import beast.base.inference.parameter.Parameter;
+import beast.base.spec.type.Tensor;
 import beast.base.inference.CompoundDistribution;
 // TODO BEAST3 migration: beast.base.inference.Evaluator was removed in BEAST3; see composeProposal() below.
 // import beast.base.inference.Evaluator;
@@ -215,9 +215,9 @@ public class NS extends MCMC {
 		
 		paramCount = 0;
 		for (StateNode node : state.stateNodeInput.get()) {
-			if (node instanceof Parameter<?>) {
-				Parameter<?> param = (Parameter<?>) node;
-				paramCount += param.getDimension();
+			if (node instanceof Tensor) {
+				Tensor<?, ?> param = (Tensor<?, ?>) node;
+				paramCount += param.size();
 			} else if (node instanceof Tree) {
 				Tree tree = (Tree) node;
 				paramCount += tree.getNodeCount() * 2;

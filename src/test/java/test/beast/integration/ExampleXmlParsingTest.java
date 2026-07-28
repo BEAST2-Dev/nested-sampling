@@ -47,7 +47,9 @@ public class ExampleXmlParsingTest {
             String[] exampleFiles = exampleDir.list(new FilenameFilter() {
                 @Override
 				public boolean accept(File dir, String name) {
-                    return name.endsWith(".xml");
+                    // Only the migrated, BEAST3-runnable twins — this project keeps the
+                    // original BEAST2 source XMLs alongside them in the same directory.
+                    return name.endsWith("_b3.xml");
                 }
             });
 
@@ -92,7 +94,9 @@ public class ExampleXmlParsingTest {
             String[] exampleFiles = exampleDir.list(new FilenameFilter() {
                 @Override
 				public boolean accept(File dir, String name) {
-                    return name.endsWith(".xml");
+                    // Only the migrated, BEAST3-runnable twins — this project keeps the
+                    // original BEAST2 source XMLs alongside them in the same directory.
+                    return name.endsWith("_b3.xml");
                 }
             });
 
