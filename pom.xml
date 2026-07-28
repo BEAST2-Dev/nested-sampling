@@ -68,7 +68,7 @@
         <dependency>
             <groupId>io.github.beast2-dev</groupId>
             <artifactId>model-selection</artifactId>
-            <version>1.7.0-SNAPSHOT</version>
+            <version>1.7.0-beta1</version>
         </dependency>
 
         <!-- GUI (optional at runtime) -->
