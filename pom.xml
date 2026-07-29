@@ -9,7 +9,7 @@
     <version>1.3.0-SNAPSHOT</version>
 
     <name>Nested Sampling</name>
-    <description>BEAST 2 package for Nested Sampling</description>
+    <description>BEAST 3 package for Nested Sampling</description>
     <url>https://github.com/BEAST2-Dev/nested-sampling</url>
 
     <licenses>
