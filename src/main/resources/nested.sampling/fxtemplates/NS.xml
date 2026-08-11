@@ -1,7 +1,11 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <beast version="2.8"
-       namespace="beastfx.app.beauti:beastfx.app.inputeditor:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.branchratemodel:beast.base.evolution.speciation:beast.base.evolution.tree.coalescent:beast.base.util:beast.base.math:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood:beast.evolution:beast.base.inference.distribution"
-       templateinfo="template for standard phylogenetic analysis,&lt;br&gt; supporting tip-date analysis and calibrations">
+       namespace="beastfx.app.beauti:beastfx.app.inputeditor:beast.pkgmgmt:beast.base.core:
+       beast.base.inference:beast.base.evolution.branchratemodel:beast.base.evolution.speciation:
+       beast.base.evolution.tree.coalescent:beast.base.util:beast.base.math:beast.evolution.nuc:
+       beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:
+       beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood:beast.evolution:
+       beast.base.inference.distribution">
 
     <map name='connect' reserved='true'>beastfx.app.inputeditor.BeautiConnector</map>
     <map name='subtemplate' reserved='true'>beastfx.app.inputeditor.BeautiSubTemplate</map>
@@ -20,32 +24,32 @@
 	        	nestedsampling.gss.NS.sampleFromPrior,
 	        	nestedsampling.gss.NS.init">
 <![CDATA[
-    &lt;run spec="nestedsampling.gss.NS" id="NS" chainLength="20000" particleCount="1" epsilon="1e-10"&gt;
+    <run spec="nestedsampling.gss.NS" id="NS" chainLength="20000" particleCount="1" epsilon="1e-10">
 
         <state storeEvery='5000' id='state'>
         </state>
 
-        &lt;distribution spec="CompoundDistribution" id="posterior"&gt;
-            &lt;distribution spec="CompoundDistribution" id="prior"&gt;
-            &lt;/distribution&gt;
-            &lt;distribution spec="CompoundDistribution" id="likelihood" useThreads="true"&gt;
-            &lt;/distribution&gt;
-        &lt;/distribution&gt;
+        <distribution spec="CompoundDistribution" id="posterior">
+            <distribution spec="CompoundDistribution" id="prior">
+            </distribution>
+            <distribution spec="CompoundDistribution" id="likelihood" useThreads="true">
+            </distribution>
+        </distribution>
 
-        &lt;logger id='tracelog' spec="beast.base.inference.Logger" logEvery="1000" fileName="beast.log" sort="smart" sanitiseHeaders='true'&gt;
-	        &lt;model idref='posterior'/&gt;
-            &lt;log idref="posterior"/&gt;
-            &lt;log idref="likelihood"/&gt;
-            &lt;log idref="prior"/&gt;
-        &lt;/logger&gt;
+        <logger id='tracelog' spec="beast.base.inference.Logger" logEvery="1000" fileName="beast.log" sort="smart" sanitiseHeaders='true'>
+	        <model idref='posterior'/>
+            <log idref="posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+        </logger>
 
-        &lt;logger id='screenlog' logEvery="1000"&gt;
-            &lt;log idref="posterior"/&gt;
-      	    &lt;ESS spec='beast.base.spec.inference.util.ESS' name='log' arg="@posterior"/&gt;
-            &lt;log idref="likelihood"/&gt;
-            &lt;log idref="prior"/&gt;
-        &lt;/logger&gt;
-    &lt;/run&gt;
+        <logger id='screenlog' logEvery="1000">
+            <log idref="posterior"/>
+      	    <ESS spec='beast.base.spec.inference.util.ESS' name='log' arg="@posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+        </logger>
+    </run>
 ]]>
 </subtemplate>
 
