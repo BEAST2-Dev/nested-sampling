@@ -1,32 +1,32 @@
-<package name='NS' version='1.3.0'>
-  <depends on='BEAST.base' atleast='2.8.0'/>
-  <depends on='BEAST.app' atleast='2.8.0'/>
-	<depends on='MODEL_SELECTION' atleast='1.7.0'/>
+<package name='NS' version='1.3.1'>
+    <depends on='BEAST.base' atleast='2.8.0'/>
+    <depends on='BEAST.app' atleast='2.8.0'/>
+    <depends on='MODEL_SELECTION' atleast='1.7.0'/>
 
     <packageapp description="Nested Sampling Log Analyser"
-              class="nestedsampling.util.NSLogAnalyser"
-              args=""
-            />
+                class="nestedsampling.util.NSLogAnalyser"
+                args=""
+    />
     <packageapp description="MCMC to NS converter"
-              class="nestedsampling.util.MCMC2NS"
-              args=""
-            />
+                class="nestedsampling.util.MCMC2NS"
+                args=""
+    />
 
-			<map from="beast.core.NSLogger" to="nestedsampling.core.NSLogger"/>
-			<map from="beast.core.NSOperatorSchedule" to="nestedsampling.core.NSOperatorSchedule"/>
+    <map from="beast.core.NSLogger" to="nestedsampling.core.NSLogger"/>
+    <map from="beast.core.NSOperatorSchedule" to="nestedsampling.core.NSOperatorSchedule"/>
 
-			<map from="beast.util.MCMC2NIS" to="nestedsampling.util.MCMC2NIS"/>
-			<map from="beast.util.MCMC2NS" to="nestedsampling.util.MCMC2NS"/>
-			<map from="beast.util.NSLogAnalyserGUI" to="nestedsampling.util.NSLogAnalyserGUI"/>
-			<map from="beast.util.NSLogAnalyser" to="nestedsampling.util.NSLogAnalyser"/>
+    <map from="beast.util.MCMC2NIS" to="nestedsampling.util.MCMC2NIS"/>
+    <map from="beast.util.MCMC2NS" to="nestedsampling.util.MCMC2NS"/>
+    <map from="beast.util.NSLogAnalyserGUI" to="nestedsampling.util.NSLogAnalyserGUI"/>
+    <map from="beast.util.NSLogAnalyser" to="nestedsampling.util.NSLogAnalyser"/>
 
-			<map from="beast.gss.DynamicNestedSampling" to="nestedsampling.gss.DynamicNestedSampling"/>
-			<map from="beast.gss.MultiThreadedNS" to="nestedsampling.gss.MultiThreadedNS"/>
-			<map from="beast.gss.NIS" to="nestedsampling.gss.NIS"/>
-			<map from="beast.gss.NS" to="nestedsampling.gss.NS"/>
-			<map from="beast.gss.NSThread" to="nestedsampling.gss.NSThread"/>
+    <map from="beast.gss.DynamicNestedSampling" to="nestedsampling.gss.DynamicNestedSampling"/>
+    <map from="beast.gss.MultiThreadedNS" to="nestedsampling.gss.MultiThreadedNS"/>
+    <map from="beast.gss.NIS" to="nestedsampling.gss.NIS"/>
+    <map from="beast.gss.NS" to="nestedsampling.gss.NS"/>
+    <map from="beast.gss.NSThread" to="nestedsampling.gss.NSThread"/>
 
-			<map from="beast.evolution.speciation.YuleModelNormalised" to="nestedsampling.evolution.speciation.YuleModelNormalised"/>
+    <map from="beast.evolution.speciation.YuleModelNormalised" to="nestedsampling.evolution.speciation.YuleModelNormalised"/>
 
 
     <service type="beast.base.core.BEASTInterface">
