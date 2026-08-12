@@ -9,3 +9,21 @@
 [Preprint](https://arxiv.org/abs/1703.05471)
 
 Citation: Maturana PM, Brewer BJ, Klaere S, Bouckaert RR. Model selection and parameter inference in phylogenetics using Nested Sampling. Systematic biology. 2019 Mar 1;68(2):219-33. [doi:10.1093/sysbio/syy050](doi:10.1093/sysbio/syy050)
+
+## For developer
+
+Build the package, skipping tests:
+
+```bash
+mvn clean package -DskipTests
+```
+
+Run an example XML through BEAST:
+
+```bash
+mvn exec:exec -Dbeast.args="src/test/resources/nestedsampling/examples/NS_4taxa_NormalBirthRate.xml"
+```
+
+## Releasing
+
+Refer to https://github.com/BEAST2-Dev/model-selection/blob/master/README.md#releasing
