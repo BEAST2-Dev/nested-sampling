@@ -2,28 +2,31 @@ package nestedsampling.evolution.speciation;
 
 import java.util.*;
 
-import org.apache.commons.math3.util.FastMath;
+import beast.base.spec.domain.PositiveReal;
+import org.apache.commons.math4.core.jdkmath.AccurateMath;
 
 import beast.base.core.Description;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.inference.State;
-import beast.base.inference.parameter.RealParameter;
-import beast.base.evolution.alignment.Alignment;
+import beast.base.spec.type.RealScalar;
 import beast.base.evolution.tree.Node;
 import beast.base.evolution.tree.Tree;
 import beast.base.evolution.tree.TreeDistribution;
-import test.beast.BEASTTestCase;
 
 
+// BEAST3 migration: org.apache.commons.math3.util.FastMath calls were switched to
+// org.apache.commons.math4.core.jdkmath.AccurateMath. Per the commons-math 4.0-beta1 changelog,
+// "Class 'FastMath' was renamed 'AccurateMath'" as part of the 4.0 legacy-module reorganisation —
+// a straight rename of the same class, so behaviour is preserved.
 @Description("Yule model with normalisation constant so density integrates to 1")
 public class YuleModelNormalised extends TreeDistribution {
 	public Input<Double> rhoInput = new Input<>("rho", "Extant sampling proportion, default 1", 1.0);
-	public Input<RealParameter> lambdaInput = new Input<>("birthDiffRate", "birth rate, one for each clade", Validate.REQUIRED);
+	public Input<RealScalar<PositiveReal>> lambdaInput = new Input<>("birthDiffRate", "birth rate, one for each clade", Validate.REQUIRED);
 
 	protected double rho;
-	
-	RealParameter lambda;
+
+	RealScalar<PositiveReal> lambda;
 	
 	double [] oldLength;
 	double [] oldRate;
@@ -36,10 +39,6 @@ public class YuleModelNormalised extends TreeDistribution {
 		tree = (Tree) treeInput.get();
 		rho = rhoInput.get();
 		lambda = lambdaInput.get();
-
-		if (lambda.getDimension() != 1) {
-			throw new IllegalArgumentException("birth rate input should have dimension 1");
-		}
 	}
 
 	@Override
@@ -54,17 +53,17 @@ public class YuleModelNormalised extends TreeDistribution {
 		final double gamma = 0;
 
 		for (Node node : tree.getNodesAsArray()) {
-			final double lambda = this.lambda.getValue();
+			final double lambda = this.lambda.get();
 			final double t = node.getHeight();
 			if (node.isRoot()) {
 				if( rho != 1 ) {
-					logP += -2 * FastMath.log1p(-p0(lambda, gamma, t));
+					logP += -2 * AccurateMath.log1p(-p0(lambda, gamma, t));
 				}
 			} else {
 				final double tp = node.getParent().getHeight();
 				logP += logftip(lambda, gamma, tp, t);
 				if( ! node.isLeaf() ) {
-					logP += FastMath.log(lambda);
+					logP += AccurateMath.log(lambda);
 				}
 			}
 		}
@@ -94,7 +93,7 @@ public class YuleModelNormalised extends TreeDistribution {
 		double A1 = -lambda * rho - gamma;
 		double A2 = lambda * (1 - rho);
 		//double res = (A1 * 0 - A2 * x1 * Math.exp(-c * time)) / (lambda * (A2 * Math.exp(-c * time) - A1));
-		double res = (A2 * x1 * FastMath.exp(x1 * time)) / (lambda * (A2 * FastMath.exp(x1 * time) - A1));
+		double res = (A2 * x1 * AccurateMath.exp(x1 * time)) / (lambda * (A2 * AccurateMath.exp(x1 * time) - A1));
 		return res;
 	}
 
@@ -106,9 +105,9 @@ public class YuleModelNormalised extends TreeDistribution {
 		//double A1 = lambda * (1 - rho) + x1;
 		double A1 = -lambda * rho - gamma;
 		double A2 = lambda * (1 - rho);
-		double y = A2 * FastMath.exp(x1 * time) - A1;
-		double res = x1 * x1 / (FastMath.exp(-x1 * time) * y * y);
-		return FastMath.log(res);
+		double y = A2 * AccurateMath.exp(x1 * time) - A1;
+		double res = x1 * x1 / (AccurateMath.exp(-x1 * time) * y * y);
+		return AccurateMath.log(res);
 	}
 
 	protected double logftip(double lambda, /* double mu, */double gamma, double time1, double time2) {
@@ -122,12 +121,12 @@ public class YuleModelNormalised extends TreeDistribution {
 			final double A2 = lambda + mlamrho;
 
 			final double x1t1 = x1 * time1;
-			final double y1 = A2 * FastMath.exp(x1t1) - A1;
+			final double y1 = A2 * AccurateMath.exp(x1t1) - A1;
 
 			final double x1t2 = x1 * time2;
-			final double y2 = A2 * FastMath.exp(x1t2) - A1;
+			final double y2 = A2 * AccurateMath.exp(x1t2) - A1;
 
-			v = (x1t1 - x1t2) + 2 * FastMath.log(y2 / y1);
+			v = (x1t1 - x1t2) + 2 * AccurateMath.log(y2 / y1);
 		}
 		return v;
 	}
@@ -156,17 +155,7 @@ public class YuleModelNormalised extends TreeDistribution {
 		return true;
 	}
 
-	
-	public static void main(String[] args) throws Exception {
-		Alignment data = BEASTTestCase.getAlignment();
-	    Tree tree = BEASTTestCase.getTree(data);
-	    
-		YuleModelNormalised myd = new YuleModelNormalised();
-		myd.initByName("tree", tree, 
-				"newick", "(human:0.024003,chimp:0.010772,bonobo:0.010772),gorilla:0.036038,orangutan:0.069125,siamang:0.099582;",
-				"birthDiffRate", "0.1",
-				"gamma", "0.5");
-		
-		System.err.println("logP = " + myd.calculateLogP());
-	}
+	// original main containing the dependency to test,
+	// so that the code is moved to {@link test.nestedsampling.evolution.speciation.YuleModelNormalisedTest}
+
 }

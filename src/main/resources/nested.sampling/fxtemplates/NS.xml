@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<beast version="2.8"
+       namespace="beastfx.app.beauti:beastfx.app.inputeditor:beast.pkgmgmt:beast.base.core:
+       beast.base.inference:beast.base.evolution.branchratemodel:beast.base.evolution.speciation:
+       beast.base.evolution.tree.coalescent:beast.base.util:beast.base.math:beast.evolution.nuc:
+       beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:
+       beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood:beast.evolution:
+       beast.base.inference.distribution">
+
+    <map name='connect' reserved='true'>beastfx.app.inputeditor.BeautiConnector</map>
+    <map name='subtemplate' reserved='true'>beastfx.app.inputeditor.BeautiSubTemplate</map>
+
+    <mergewith point="runnables">
+        <subtemplate id="Nested Sampling" class="nestedsampling.gss.NS" mainid="NS"
+                     suppressInputs="nestedsampling.gss.NS.operator,
+    			nestedsampling.gss.NS.operatorschedule,
+	    	    nestedsampling.gss.NS.state,
+	        	nestedsampling.gss.NS.distribution,
+	        	nestedsampling.gss.NS.samplingDistribution,
+	        	nestedsampling.gss.NS.stopFactor,
+	        	nestedsampling.gss.NS.preBurnin,
+	        	nestedsampling.gss.NS.autoSubChainLength,
+	        	nestedsampling.gss.NS.storeEvery,
+	        	nestedsampling.gss.NS.sampleFromPrior,
+	        	nestedsampling.gss.NS.init">
+<![CDATA[
+    <run spec="nestedsampling.gss.NS" id="NS" chainLength="20000" particleCount="1" epsilon="1e-10">
+
+        <state storeEvery='5000' id='state'>
+        </state>
+
+        <distribution spec="CompoundDistribution" id="posterior">
+            <distribution spec="CompoundDistribution" id="prior">
+            </distribution>
+            <distribution spec="CompoundDistribution" id="likelihood" useThreads="true">
+            </distribution>
+        </distribution>
+
+        <logger id='tracelog' spec="beast.base.inference.Logger" logEvery="1000" fileName="beast.log" sort="smart" sanitiseHeaders='true'>
+	        <model idref='posterior'/>
+            <log idref="posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+        </logger>
+
+        <logger id='screenlog' logEvery="1000">
+            <log idref="posterior"/>
+      	    <ESS spec='beast.base.spec.inference.util.ESS' name='log' arg="@posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+        </logger>
+    </run>
+]]>
+</subtemplate>
+
+</mergewith>
+
+</beast>

@@ -22,9 +22,10 @@ import beast.base.inference.Operator;
 import beast.base.inference.State;
 import beast.base.inference.StateNode;
 import beast.base.inference.StateNodeInitialiser;
-import beast.base.inference.parameter.Parameter;
+import beast.base.spec.type.Tensor;
 import beast.base.inference.CompoundDistribution;
-import beast.base.inference.Evaluator;
+// TODO BEAST3 migration: beast.base.inference.Evaluator was removed in BEAST3; see composeProposal() below.
+// import beast.base.inference.Evaluator;
 import beast.base.core.Log;
 import beast.base.evolution.tree.Tree;
 import beast.base.evolution.tree.TreeInterface;
@@ -205,9 +206,9 @@ public class NIS extends MCMC {
 		
 		paramCount = 0;
 		for (StateNode node : state.stateNodeInput.get()) {
-			if (node instanceof Parameter<?>) {
-				Parameter<?> param = (Parameter<?>) node;
-				paramCount += param.getDimension();
+			if (node instanceof Tensor) {
+				Tensor<?, ?> param = (Tensor<?, ?>) node;
+				paramCount += param.size();
 			} else if (node instanceof Tree) {
 				Tree tree = (Tree) node;
 				paramCount += tree.getNodeCount() * 2;
@@ -742,33 +743,41 @@ reportLogLikelihoods(posterior, "");
 		if (printDebugInfo)
 			System.err.print("\n" + currState + " " + operator.getName() + ":");
 
-		final Distribution evaluatorDistribution = operator.getEvaluatorDistribution();
-		Evaluator evaluator = null;
-
-		if (evaluatorDistribution != null) {
-			evaluator = new Evaluator() {
-				@Override
-				public double evaluate() {
-					double logP = 0.0;
-
-					state.storeCalculationNodes();
-					state.checkCalculationNodesDirtiness();
-
-					try {
-						logP = evaluatorDistribution.calculateLogP();
-					} catch (Exception e) {
-						e.printStackTrace();
-						System.exit(1);
-					}
-
-					state.restore();
-					state.store(currState);
-
-					return logP;
-				}
-			};
-		}
-		final double logHastingsRatio = operator.proposal(evaluator);
+		// TODO BEAST3 migration: beast.base.inference.Evaluator was removed in BEAST3 and
+		// Operator.proposal(Evaluator) no longer exists (Operator.proposal() is now zero-arg).
+		// In BEAST2 this evaluator was only ever consumed by SliceOperator.proposal(Evaluator)
+		// (the only override of proposal(Evaluator)/getEvaluatorDistribution() in beast2/src);
+		// every other operator's proposal(Evaluator) just delegated to proposal(). SliceOperator
+		// does not exist in BEAST3 and is not used by this package's own operators/examples, so
+		// this block was already dead code under BEAST3 and is replaced by operator.proposal().
+//		final Distribution evaluatorDistribution = operator.getEvaluatorDistribution();
+//		Evaluator evaluator = null;
+//
+//		if (evaluatorDistribution != null) {
+//			evaluator = new Evaluator() {
+//				@Override
+//				public double evaluate() {
+//					double logP = 0.0;
+//
+//					state.storeCalculationNodes();
+//					state.checkCalculationNodesDirtiness();
+//
+//					try {
+//						logP = evaluatorDistribution.calculateLogP();
+//					} catch (Exception e) {
+//						e.printStackTrace();
+//						System.exit(1);
+//					}
+//
+//					state.restore();
+//					state.store(currState);
+//
+//					return logP;
+//				}
+//			};
+//		}
+//		final double logHastingsRatio = operator.proposal(evaluator);
+		final double logHastingsRatio = operator.proposal();
 
 		if (logHastingsRatio != Double.NEGATIVE_INFINITY) {
 
