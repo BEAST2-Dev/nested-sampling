@@ -6,7 +6,7 @@
 
     <groupId>io.github.beast2-dev</groupId>
     <artifactId>nested-sampling</artifactId>
-    <version>1.3.1-SNAPSHOT</version>
+    <version>1.3.2-SNAPSHOT</version>
 
     <name>Nested Sampling</name>
     <description>BEAST 3 package for Nested Sampling</description>
